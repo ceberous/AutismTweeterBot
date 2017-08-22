@@ -138,7 +138,7 @@ function enumerateTopLevelThreads( wThreads ) {
 				console.log( "\nSearching --> " + wThreads[ i ].link + ".rss" + " [ " + ( i + 1 ) + " of " + wTLenS + " ]" );
 				console.log( wThreads[i]["atom:title"]["#"] + "\n" );
 				
-				var wFoundInTitle		= scanText( wvThreads[i]["atom:title"]["#"].toLowerCase() );
+				var wFoundInTitle		= scanText( wThreads[i]["atom:title"]["#"].toLowerCase() );
 				if ( wFoundInTitle ) { wResults.push( wLink ); }
 
 				var wTopLayerComments 	= await fetchXML( wLink + ".rss" );
