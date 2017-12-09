@@ -1,10 +1,8 @@
-const path = require("path");
 const request = require( "request" );
-const FeedParser = require("feedparser");
+const FeedParser = require( "feedparser" );
 const { map } = require( "p-iteration" );
 const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
-const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const redis = require( "../UTILS/redisManager.js" ).redis;
 const RU = require( "../UTILS/redisUtils.js" );
 
@@ -128,6 +126,8 @@ function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 			console.log( wFinalTweets );
 			await TweetResults( wFinalTweets );
 
+			wSearchTerms = [];
+			wFinalTweets = [];
 			resolve();
 		}
 		catch( error ) { console.log( error ); reject( error ); }
