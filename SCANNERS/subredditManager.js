@@ -80,7 +80,10 @@ const R_GLOBAL_ALREADY_TRACKED = "SCANNERS.SUBREDDIT.ALREADY_TRACKED";
 function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
-			
+
+			console.log( "\nStarted Subbreddit Scan" );
+			PrintNowTime();
+
 			// 1.) Get 'Top' Level Threads
 			wSearchTerms = wTerms;
 			var wMainURL = "https://www.reddit.com/r/" + wSubreddit + "/" + wSection + "/.rss";
@@ -113,8 +116,8 @@ function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 			await RU.setDifferenceStore( redis , R_PUBMED_NEW_TRACKING , R_SUBREDDIT_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED );
 			await RU.delKey( redis , R_SUBREDDIT_PLACEHOLDER );
 			const wNewTracking = await RU.getFullSet( redis , R_PUBMED_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "\nnothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "\nnothing new found" ); PrintNowTime(); resolve(); return; }
+			if ( !wNewTracking ) { console.log( "\nSubreddit-Scan --> nothing new found" ); PrintNowTime(); resolve(); return; }
+			if ( wNewTracking.length < 1 ) { console.log( "\nSubreddit-Scan --> nothing new found" ); PrintNowTime(); resolve(); return; }
 			wIDS = wIDS.filter( x => wNewTracking.indexOf( x ) !== -1 );
 			wResults = wResults.filter( x => wIDS.indexOf( x["id"] ) !== -1 );
 			await RU.delKey( redis , R_PUBMED_NEW_TRACKING );
@@ -128,6 +131,8 @@ function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 
 			wSearchTerms = [];
 			wFinalTweets = [];
+			console.log( "\nSubbreddit Scan Finished" );
+			PrintNowTime();			
 			resolve();
 		}
 		catch( error ) { console.log( error ); reject( error ); }

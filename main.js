@@ -21,25 +21,22 @@ var JOB_IDS = [];
 	await require( "./UTILS/tweetManager.js" ).initialize();
 	console.log( "TweetManager Ready" );
 
-	PUB_MED_MAN = require("./SCANNERS/pubmedManager.js");
-	SUBREDDIT_MAN = require("./SCANNERS/subredditManager.js");
+	PUB_MED_MAN = require( "./SCANNERS/pubmedManager.js" );
+	SUBREDDIT_MAN = require( "./SCANNERS/subredditManager.js" );
 
-	JOB_IDS.push( { name: "PUB_MED_HOURLY" , pid: schedule.scheduleJob( "01 */1 * * *" ,
-		async function() {
-			await PUB_MED_MAN.searchPublishedTodayTitle( [ "autism" , "autistic" ] );
-		}
+	JOB_IDS.push({ 
+		name: "PUB_MED_HOURLY" ,
+		pid: schedule.scheduleJob( "01 */1 * * *" , PUB_MED_MAN.searchPublishedTodayTitle( [ "autism" , "autistic" ] )
 	)});
 
-	JOB_IDS.push( { name: "SUBREDDIT_NEW" , pid: schedule.scheduleJob( "05 */1 * * *" ,
-		async function() {
-			await SUBREDDIT_MAN.searchSubreddit( "science" , "new" , [ "autis" ] );
-		}
+	JOB_IDS.push({
+		name: "SUBREDDIT_NEW" ,
+		pid: schedule.scheduleJob( "05 */1 * * *" , SUBREDDIT_MAN.searchSubreddit( "science" , "new" , [ "autis" ] )
 	)});
 
-	JOB_IDS.push( { name: "SUBREDDIT_TOP" , pid: schedule.scheduleJob( "10 */2 * * *" ,
-		async function() {
-			await SUBREDDIT_MAN.searchSubreddit( "science" , "top" , [ "autis" ] );
-		}
+	JOB_IDS.push({
+		name: "SUBREDDIT_TOP" ,
+		pid: schedule.scheduleJob( "10 */2 * * *" , SUBREDDIT_MAN.searchSubreddit( "science" , "top" , [ "autis" ] )
 	)});
 
 })();

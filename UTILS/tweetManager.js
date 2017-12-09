@@ -7,7 +7,7 @@ var creds = tBotConfig = tBot = null;
 function INITIALIZE() {
 	return new Promise( function( resolve , reject ) {
 		try {
-			creds = require( "./personal.js" ).TWITTER_CREDS;
+			creds = require( "../personal.js" ).TWITTER_CREDS;
 			if ( !creds ) { reject( "no twitter creds" ); return; }
 			if ( !creds.consumer_key ) { reject( "no consumer_key" ); return; }
 			if ( !creds.consumer_secret ) { reject( "no consumer_secret" ); return; }
