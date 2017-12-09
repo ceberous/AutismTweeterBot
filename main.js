@@ -25,7 +25,7 @@ var JOB_IDS = [];
 	SUBREDDIT_MAN = require("./SCANNERS/subredditManager.js");
 	
 	//await PUB_MED_MAN.searchPublishedTodayTitle( [ "autism" , "autistic" ] );
-	await SUBREDDIT_MAN.searchSubreddit( "science" , "new" , [ "autis" ] );
+	await SUBREDDIT_MAN.searchSubreddit( "science" , "top" , [ "knowledge" ] );
 
 	// JOB_IDS.push( { name: "PUB_MED_HOURLY" , pid: schedule.scheduleJob( "01 */1 * * *" ,
 	// 	async function() {

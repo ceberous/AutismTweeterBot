@@ -16,26 +16,26 @@ function getDOICheerio( wPubMedID , wDOIOnly ) {
 			//console.log( "\t --> Cherrio.js --> " + wURL2 );
 			request( wURL2 , function( wErr , wResponse , wBody ){
 
-		        var $ = cheerio.load( wBody );
-		        var wOBJ1 = {};
-		        var wDOI = null;
+				var $ = cheerio.load( wBody );
+				var wOBJ1 = {};
+				var wDOI = null;
 
-		        var wTitle = $( ".rprt.abstract" ).children();
-		        wOBJ1.title = $( wTitle[2] ).text();
+				var wTitle = $( ".rprt.abstract" ).children();
+				wOBJ1.title = $( wTitle[2] ).text();
 
-		        var doi_text = $( ".cit" ).text();
-		        var doi_start = doi_text.indexOf( "doi:" );
-		        if ( doi_start !== -1 ) {
-		        	var doi_end = doi_text.indexOf( " " , ( doi_start + 5 ) );
-		        	doi_text = doi_text.substring( ( doi_start + 5 ) , doi_end );
-		        	doi_text = doi_text.replace( /\s/g , "" );
-		        	if ( doi_text[ doi_text.length - 1 ] === "." ) {
-		        		doi_text = doi_text.substring( 0 , ( doi_text.length - 2 ) );
-		        	}
-		        	wDOI = doi_text;
-		        }
-		        else {
-		        	$( "a" ).each( function () {
+				var doi_text = $( ".cit" ).text();
+				var doi_start = doi_text.indexOf( "doi:" );
+				if ( doi_start !== -1 ) {
+					var doi_end = doi_text.indexOf( " " , ( doi_start + 5 ) );
+					doi_text = doi_text.substring( ( doi_start + 5 ) , doi_end );
+					doi_text = doi_text.replace( /\s/g , "" );
+					if ( doi_text[ doi_text.length - 1 ] === "." ) {
+						doi_text = doi_text.substring( 0 , ( doi_text.length - 2 ) );
+					}
+					wDOI = doi_text;
+				}
+				else {
+					$( "a" ).each( function () {
 						var wID = $( this ).attr( "href" );
 						wDOI = wID.substring( 0 , 10 );
 						if ( wDOI === "//doi.org/" ) {
@@ -46,18 +46,18 @@ function getDOICheerio( wPubMedID , wDOIOnly ) {
 					});
 				}
 
-		        if ( wDOIOnly ) { resolve( wDOI ); return; }
-		        
-		        wOBJ1.pmid = wPubMedID;
-		        wOBJ1.pubmedURL = "https://www.ncbi.nlm.nih.gov/pubmed/" + wPubMedID;
-		        if ( wDOI ) {
-		        	if ( wDOI.length > 1 ) {
+				if ( wDOIOnly ) { resolve( wDOI ); return; }
+
+				wOBJ1.pmid = wPubMedID;
+				wOBJ1.pubmedURL = "https://www.ncbi.nlm.nih.gov/pubmed/" + wPubMedID;
+				if ( wDOI ) {
+					if ( wDOI.length > 1 ) {
 						wOBJ1[ "doi" ] = wDOI;
 						wOBJ1[ "doiB64" ] = EncodeB64( wDOI );
 						wOBJ1[ "scihubURL" ] = SCI_HUB_BASE_URL + wDOI;
-		        	}
-		        }
-		        resolve( wOBJ1 );
+					}
+				}
+				resolve( wOBJ1 );
 
 			});
 		}
@@ -136,7 +136,6 @@ function searchPubMedPreviousDay( wSearchTerms ) {
 
 }
 
-
 const R_PUBMED_PLACEHOLDER = "SCANNERS.PUBMED.PLACEHOLDER";
 const R_PUBMED_NEW_TRACKING = "SCANNERS.PUBMED.NEW_TRACKING";
 const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
@@ -193,6 +192,4 @@ function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
-
-
 module.exports.searchPublishedTodayTitle = SEARCH_PUBLISHED_TODAY_TITLE;

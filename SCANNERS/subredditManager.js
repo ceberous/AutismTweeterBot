@@ -8,10 +8,13 @@ const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const redis = require( "../UTILS/redisManager.js" ).redis;
 const RU = require( "../UTILS/redisUtils.js" );
 
+var wSearchTerms = [];
+var wFinalTweets = [];
+
 function fetchXML( wURL ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
-			//console.log( "Searching --> " + wURL );
+			console.log( "Searching --> " + wURL );
 			var wResults = [];
 
 			var feedparser = new FeedParser( [{ "normalize": true , "feedurl": wURL }] );
@@ -39,36 +42,6 @@ function fetchXML( wURL ) {
 	});
 }
 
-function compareSeachResultsToCache( wResults ) {
-
-	function flatten(array) {
-	  return array.reduce(function(memo, el) {
-	    var items = Array.isArray(el) ? flatten(el) : [el];
-	    return memo.concat(items);
-	  }, [] );
-	}
-
-	function uniq(a) { return Array.from( new Set( a ) ); }
-
-	wResults = flatten( wResults );
-	wResults = uniq( wResults );
-
-	console.log( "Flattened Results = " );
-	console.log( wResults );
-	var xUniqueResults = [];
-	for( var i = 0; i < wResults.length; ++i ) {
-		var wUnique = true;
-		for ( var j = 0; j < SUBREDDIT_RESULTS[ "i" ].length; ++j ) {
-			if ( wResults[ i ] === SUBREDDIT_RESULTS[ "i" ][ j ] ) { wUnique = false; }
-		}
-		if ( wUnique ) { xUniqueResults.push( wResults[ i ] ); SUBREDDIT_RESULTS[ "i" ].push( wResults[ i ] ); }
-	}
-
-	WRITE_SUBREDDIT();
-	return xUniqueResults; 
-}
-
-var wSearchTerms = [];
 function scanText( wText ) {
 	for ( var i = 0; i < wSearchTerms.length; ++i ) {
 		wSTResult = wText.indexOf( wSearchTerms[ i ] );
@@ -79,98 +52,82 @@ function scanText( wText ) {
 	return false;
 }
 
-function enumerateSingleThread( xComments ) {
+function SEARCH_SINGLE_THREAD( wComments ) {
 	return new Promise( function( resolve , reject ) {
 		try {
-			var wMatchedKeywordLinks = [];
-			for( var i = 0; i < xComments.length; ++i ) {
-
-				var x1 = xComments[i]["atom:content"]["#"].toLowerCase();
-
-				var wFoundKeyword = scanText( x1 );
-				if ( wFoundKeyword ) {			
-					var wtemp = xComments[i].link.split("/");
-					if ( wtemp.length === 10 ) {
-						//console.log( "KEYWORD MATCH GAURENTEED FOUND !!!!" );
-						//console.log( xComments[i].link )
-						wMatchedKeywordLinks.push( xComments[i].link );
-					}
+			var wFR = [];
+			var x1 = wComments["atom:content"]["#"].toLowerCase();
+			var wFoundKeyword = scanText( x1 );
+			if ( wFoundKeyword ) {			
+				var wtemp = wComments.link.split("/");
+				if ( wtemp.length === 10 ) {
+					//console.log( "KEYWORD MATCH GAURENTEED FOUND !!!!" );
+					//console.log( wComments.link )
+					var wID = wtemp[ wtemp.length - 4 ] + "-" + wtemp[ wtemp.length - 2 ];
+					wFR.push({
+						id: wID ,
+						link: wComments.link
+					});
 				}
 			}
-			resolve( wMatchedKeywordLinks );
+			resolve( wFR );
 		}
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
 
-
-function enumerateCommentThreads( xCommentsThreads ) {
+const R_SUBREDDIT_PLACEHOLDER = "SCANNERS.SUBREDDIT.PLACEHOLDER";
+const R_PUBMED_NEW_TRACKING = "SCANNERS.SUBREDDIT.NEW_TRACKING";
+const R_GLOBAL_ALREADY_TRACKED = "SCANNERS.SUBREDDIT.ALREADY_TRACKED";
+function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
-			xCommentsThreads.shift();
-			let wCLen = xCommentsThreads.length;
-			let wClenS = wCLen.toString();
-			var wResults = [];
-			for ( var i = 0; i < wCLen; ++i ) {
-				var x1 = xCommentsThreads[ i ].link + ".rss";
-				console.log( "\t\t" + x1 + " [ " + ( i + 1 ).toString() + " of " + wClenS + " ]" );
-				var xComments 	= await fetchXML( x1 );
-				var xResults 	= await enumerateSingleThread( xComments );
-				if ( xResults.length > 0 ) { wResults.push( xResults ); }
-			}
-			resolve( wResults );
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
+			
+			// 1.) Get 'Top' Level Threads
+			wSearchTerms = wTerms;
+			var wMainURL = "https://www.reddit.com/r/" + wSubreddit + "/" + wSection + "/.rss";
+			var wTopThreads = await fetchXML( wMainURL );
 
-function enumerateTopLevelThreads( wThreads ) {
-	return new Promise( async function( resolve , reject ) {
-		try {
-			let wTLen = wThreads.length;
-			let wTLenS = wTLen.toString();
-			var wResults = [];
-			for ( var i = 0; i < wTLen; ++i ) {
-				
-				let wLink = wThreads[ i ].link;
-				console.log( "\nSearching --> " + wThreads[ i ].link + ".rss" + " [ " + ( i + 1 ) + " of " + wTLenS + " ]" );
-				console.log( wThreads[i]["atom:title"]["#"] + "\n" );
-				
-				var wFoundInTitle		= scanText( wThreads[i]["atom:title"]["#"].toLowerCase() );
-				if ( wFoundInTitle ) { wResults.push( wLink ); }
+			// 2.) Search the Each Title
+			var wTopCommentTitles = wTopThreads.map( x => x["atom:title"]["#"].toLowerCase() );
+			wTopCommentTitles = wTopCommentTitles.filter( x => scanText( x ) === true );
+			wTopCommentTitles =  wTopCommentTitles.map( x => "#AutismComments " + x );
+			wFinalTweets = wFinalTweets.concat( wTopCommentTitles );
 
-				var wTopLayerComments 	= await fetchXML( wLink + ".rss" );
-				var wChildComments 		= await enumerateCommentThreads( wTopLayerComments );
-				if ( wChildComments.length > 0 ) { wResults.push( wChildComments ); }
+			// 3.) Get 'Comment' Threads for each 'Top' Thread
+			var wTopCommentURLS = wTopThreads.map( x => x["link"] + ".rss" );
+			var wTopCommentsThreads = await map( wTopCommentURLS , wURL => fetchXML( wURL ) ); 
+			wTopCommentsThreads = wTopCommentsThreads.map( x => x.shift() ); // 1st one is "main" url
+			wTopCommentsThreads = [].concat.apply( [] , wTopCommentsThreads );
 
-			}
-			resolve( wResults );
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
+			// 4.) Get 'Single' Threads for each 'Comment' Thread
+			var wSingleCommentURLS = wTopCommentsThreads.map( x => x["link"] + ".rss" );
+			var wSingleThreads = await map( wSingleCommentURLS , wURL => fetchXML( wURL ) );
+			wSingleThreads = [].concat.apply( [] , wSingleThreads );
+			
+			// 5.) Finally, Search over All Single Comments
+			var wResults = await map( wSingleThreads , wThread => SEARCH_SINGLE_THREAD( wThread ) );
+			wResults = [].concat.apply( [] , wResults );
 
-// function wSearchSubreddit( wSubreddit , wSection , wTerms ) {
+			// 6.) Filter for 'Un-Tweeted' Results and Store 'Uneq' ones
+			var wIDS = wResults.map( x => x["id"] );
+			await RU.setSetFromArray( redis , R_SUBREDDIT_PLACEHOLDER , wIDS );
+			await RU.setDifferenceStore( redis , R_PUBMED_NEW_TRACKING , R_SUBREDDIT_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED );
+			await RU.delKey( redis , R_SUBREDDIT_PLACEHOLDER );
+			const wNewTracking = await RU.getFullSet( redis , R_PUBMED_NEW_TRACKING );
+			if ( !wNewTracking ) { console.log( "\nnothing new found" ); PrintNowTime(); resolve(); return; }
+			if ( wNewTracking.length < 1 ) { console.log( "\nnothing new found" ); PrintNowTime(); resolve(); return; }
+			wIDS = wIDS.filter( x => wNewTracking.indexOf( x ) !== -1 );
+			wResults = wResults.filter( x => wIDS.indexOf( x["id"] ) !== -1 );
+			await RU.delKey( redis , R_PUBMED_NEW_TRACKING );
+			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED , wIDS );
 
-// 	if ( SUBREDDIT_RESULTS[ "i" ].length > 200 ) { SUBREDDIT_RESULTS[ "i" ] = SUBREDDIT_RESULTS[ "i" ].slice( 99 , SUBREDDIT_RESULTS[ "i" ].length ); console.log( "PRUNED SUBREDDIT SAVE FILE" ); WRITE_SUBREDDIT(); }
+			// 7.) Tweet Unique Results
+			wResults =  wResults.map( x => "#AutismComments " + x["link"] );
+			wFinalTweets = [].concat.apply( [] , wResults );
+			console.log( wFinalTweets );
+			await TweetResults( wFinalTweets );
 
-// 	let wURL = "https://www.reddit.com/r/" + wSubreddit + "/" + wSection + "/.rss";
-// 	wSearchTerms = wTerms;
-// 	return new Promise( async function( resolve , reject ) {
-// 		try {
-// 			var wTopThreads 		= await fetchXML( wURL );
-// 			var wSearchResults 		= await enumerateTopLevelThreads( wTopThreads );
-// 			var wUniqueResults		= await compareSeachResultsToCache( wSearchResults );
-// 			resolve( wUniqueResults );
-// 		}
-// 		catch( error ) { console.log( error ); reject( error ); }
-// 	});
-// }
-
-
-function SEARCH_SUBREDDIT() {
-	return new Promise( function( resolve , reject ) {
-		try {
 			resolve();
 		}
 		catch( error ) { console.log( error ); reject( error ); }
