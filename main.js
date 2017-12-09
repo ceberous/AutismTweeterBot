@@ -26,22 +26,22 @@ var JOB_IDS = [];
 
 	JOB_IDS.push({ 
 		name: "PUB_MED_HOURLY" ,
-		pid: schedule.scheduleJob( "01 */1 * * *" , function() {
-			PUB_MED_MAN.searchPublishedTodayTitle( [ "autism" , "autistic" ] );
+		pid: schedule.scheduleJob( "01 */1 * * *" , async function() {
+			await PUB_MED_MAN.searchPublishedTodayTitle( [ "autism" , "autistic" ] );
 		}
 	)});
 
 	JOB_IDS.push({
 		name: "SUBREDDIT_NEW" ,
-		pid: schedule.scheduleJob( "05 */1 * * *" , function() {
-			SUBREDDIT_MAN.searchSubreddit( "science" , "new" , [ "autis" ] );
+		pid: schedule.scheduleJob( "05 */1 * * *" , async function() {
+			await SUBREDDIT_MAN.searchSubreddit( "science" , "new" , [ "autis" ] );
 		}
 	)});
 
 	JOB_IDS.push({
 		name: "SUBREDDIT_TOP" ,
-		pid: schedule.scheduleJob( "10 */2 * * *" , function() {
-			SUBREDDIT_MAN.searchSubreddit( "science" , "top" , [ "autis" ] );
+		pid: schedule.scheduleJob( "10 */2 * * *" , async function() {
+			await SUBREDDIT_MAN.searchSubreddit( "science" , "top" , [ "autis" ] );
 		}
 	)});
 

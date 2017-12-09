@@ -13,7 +13,7 @@ function getDOICheerio( wPubMedID , wDOIOnly ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
 			const wURL2 = "https://www.ncbi.nlm.nih.gov/pubmed/" + wPubMedID;
-			//console.log( "\t --> Cherrio.js --> " + wURL2 );
+			console.log( "\t --> Cherrio.js --> " + wURL2 );
 			request( wURL2 , function( wErr , wResponse , wBody ){
 
 				var $ = cheerio.load( wBody );
@@ -26,11 +26,13 @@ function getDOICheerio( wPubMedID , wDOIOnly ) {
 				var doi_text = $( ".cit" ).text();
 				var doi_start = doi_text.indexOf( "doi:" );
 				if ( doi_start !== -1 ) {
-					var doi_end = doi_text.indexOf( " " , ( doi_start + 5 ) );
-					doi_text = doi_text.substring( ( doi_start + 5 ) , doi_end );
+					//var doi_end = doi_text.indexOf( " " , ( doi_start + 5 ) );
+					doi_text = doi_text.substring( ( doi_start + 5 ) , ( doi_text.length - 1 ) );
+					doi_text = doi_text.split( " " )[0];
+					//console.log( doi_text );
 					doi_text = doi_text.replace( /\s/g , "" );
 					if ( doi_text[ doi_text.length - 1 ] === "." ) {
-						doi_text = doi_text.substring( 0 , ( doi_text.length - 2 ) );
+						doi_text = doi_text.substring( 0 , ( doi_text.length - 1 ) );
 					}
 					wDOI = doi_text;
 				}
@@ -45,7 +47,7 @@ function getDOICheerio( wPubMedID , wDOIOnly ) {
 						}
 					});
 				}
-
+				//console.log( wDOI );
 				if ( wDOIOnly ) { resolve( wDOI ); return; }
 
 				wOBJ1.pmid = wPubMedID;
@@ -71,7 +73,7 @@ function getPubMedIDInfo( wPubMedID ) {
 		var finalOBJ = {};
 		try {
 			request( wURL , async function ( err , response , body ) {
-				//console.log( "\n" + wURL + " --> RESPONSE_CODE = " + response.statusCode.toString() );
+				console.log( "\n" + wURL + " --> RESPONSE_CODE = " + response.statusCode.toString() );
 				if ( response.statusCode !== 200 ) {
 					finalOBJ = await getDOICheerio( wPubMedID );
 				}
@@ -91,8 +93,9 @@ function getPubMedIDInfo( wPubMedID ) {
 						finalOBJ.doiB64 = EncodeB64( finalOBJ.doi ); 
 						finalOBJ.scihubURL = SCI_HUB_BASE_URL + finalOBJ.doi;
 					}
-					resolve( finalOBJ );
 				}
+				//console.log( finalOBJ );
+				resolve( finalOBJ );
 			});
 		}
 		catch( err ) { console.log(err); reject( err ); }
@@ -127,8 +130,13 @@ function searchPubMedPreviousDay( wSearchTerms ) {
 		try {
 			request( wURL , function ( err , response , body ) {
 				if ( response.statusCode !== 200 ) { reject(err); }
-				body = JSON.parse( body ); 
-				resolve( body[ "esearchresult" ][ "idlist" ] );
+				body = JSON.parse( body );
+				if ( body[ "esearchresult" ][ "idlist" ] ) {
+					var wID_LIST = body[ "esearchresult" ][ "idlist" ];
+					resolve( wID_LIST );
+					return;
+				}
+				else { resolve([]); return; }
 			});
 		}
 		catch( err ) { console.log(err); reject(err); }
@@ -149,7 +157,7 @@ function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 			const wPubMedRawResults = await searchPubMedPreviousDay( wTerms );
 			if ( !wPubMedRawResults ) { console.log( "no pubmed results" ); PrintNowTime(); resolve(); return; }
 			if ( wPubMedRawResults.length < 1 ) { console.log( "no pubmed results" ); PrintNowTime(); resolve(); return; }
-
+			
 			// 2.) Gather "meta" data about each of them
 			var wPubMedResultsWithMetaData = await map( wPubMedRawResults , pubmedID => getPubMedIDInfo( pubmedID ) );
 			var b64_DOIS = wPubMedResultsWithMetaData.map( x => x[ "doiB64" ] );
@@ -166,8 +174,6 @@ function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
 			wPubMedResultsWithMetaData = wPubMedResultsWithMetaData.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
 			await RU.delKey( redis , R_PUBMED_NEW_TRACKING );
-			//console.log( wNewTracking );
-			//console.log( wPubMedResultsWithMetaData );
 			var wFormattedTweets = [];
 			for ( var i = 0; i < wPubMedResultsWithMetaData.length; ++i ) {
 				var wMessage = "#AutismResearchPapers ";
@@ -182,7 +188,6 @@ function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 				wMessage = wMessage + " Paper: " + wPubMedResultsWithMetaData[i].scihubURL;
 				wFormattedTweets.push( wMessage );
 			}
-			//console.log( wFormattedTweets );
 			await TweetResults( wFormattedTweets );
 
 			console.log( "\nPubMed Hourly Scan Finished" );
