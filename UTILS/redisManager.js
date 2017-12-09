@@ -7,7 +7,7 @@ function INITIALIZE() {
 
 			redis = await REDIS.createClient({ 
 				host: "localhost" ,
-				port: "8443" ,
+				port: "6379" ,
 				db: "6" ,
 				retry_strategy: function ( options ) {
 			        if (options.error && options.error.code === 'ECONNREFUSED') {
