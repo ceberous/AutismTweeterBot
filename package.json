@@ -1,19 +1,19 @@
 {
   "name": "autismtweeter",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "ceberous",
   "license": "ISC",
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "feedparser": "^2.2.1",
-    "jsonfile": "^3.0.1",
-    "node-schedule": "^1.2.4",
-    "path": "^0.12.7",
+    "node-schedule": "^1.2.5",
+    "p-iteration": "^1.1.5",
+    "redis": "^2.8.0",
     "request": "^2.81.0",
     "twit": "^2.2.9"
   }

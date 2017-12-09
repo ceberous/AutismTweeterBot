@@ -1,14 +1,12 @@
-var path = require("path");
-var jsonfile = require("jsonfile");
-var request = require( "request" );
-var FeedParser = require("feedparser");
-
-var subredditSave_FP = path.join( __dirname , "subredditResults.json" );
-var SUBREDDIT_RESULTS = { "i": [] };
-function WRITE_SUBREDDIT() { jsonfile.writeFileSync( subredditSave_FP , SUBREDDIT_RESULTS ); console.log( "SUBREDDIT SAVE FILE UPDATED" ); }
-try { SUBREDDIT_RESULTS = jsonfile.readFileSync( subredditSave_FP ); }
-catch ( err ) { WRITE_SUBREDDIT(); }
-if ( !SUBREDDIT_RESULTS[ "i" ] ) { SUBREDDIT_RESULTS[ "i" ] = []; }
+const path = require("path");
+const request = require( "request" );
+const FeedParser = require("feedparser");
+const { map } = require( "p-iteration" );
+const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
+const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
+const redis = require( "../UTILS/redisManager.js" ).redis;
+const RU = require( "../UTILS/redisUtils.js" );
 
 function fetchXML( wURL ) {
 	return new Promise( async function( resolve , reject ) {
@@ -152,21 +150,30 @@ function enumerateTopLevelThreads( wThreads ) {
 	});
 }
 
-function wSearchSubreddit( wSubreddit , wSection , wTerms ) {
+// function wSearchSubreddit( wSubreddit , wSection , wTerms ) {
 
-	if ( SUBREDDIT_RESULTS[ "i" ].length > 200 ) { SUBREDDIT_RESULTS[ "i" ] = SUBREDDIT_RESULTS[ "i" ].slice( 99 , SUBREDDIT_RESULTS[ "i" ].length ); console.log( "PRUNED SUBREDDIT SAVE FILE" ); WRITE_SUBREDDIT(); }
+// 	if ( SUBREDDIT_RESULTS[ "i" ].length > 200 ) { SUBREDDIT_RESULTS[ "i" ] = SUBREDDIT_RESULTS[ "i" ].slice( 99 , SUBREDDIT_RESULTS[ "i" ].length ); console.log( "PRUNED SUBREDDIT SAVE FILE" ); WRITE_SUBREDDIT(); }
 
-	let wURL = "https://www.reddit.com/r/" + wSubreddit + "/" + wSection + "/.rss";
-	wSearchTerms = wTerms;
-	return new Promise( async function( resolve , reject ) {
+// 	let wURL = "https://www.reddit.com/r/" + wSubreddit + "/" + wSection + "/.rss";
+// 	wSearchTerms = wTerms;
+// 	return new Promise( async function( resolve , reject ) {
+// 		try {
+// 			var wTopThreads 		= await fetchXML( wURL );
+// 			var wSearchResults 		= await enumerateTopLevelThreads( wTopThreads );
+// 			var wUniqueResults		= await compareSeachResultsToCache( wSearchResults );
+// 			resolve( wUniqueResults );
+// 		}
+// 		catch( error ) { console.log( error ); reject( error ); }
+// 	});
+// }
+
+
+function SEARCH_SUBREDDIT() {
+	return new Promise( function( resolve , reject ) {
 		try {
-			var wTopThreads 		= await fetchXML( wURL );
-			var wSearchResults 		= await enumerateTopLevelThreads( wTopThreads );
-			var wUniqueResults		= await compareSeachResultsToCache( wSearchResults );
-			resolve( wUniqueResults );
+			resolve();
 		}
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
-
-module.exports.searchSubreddit = wSearchSubreddit;
+module.exports.searchSubreddit = SEARCH_SUBREDDIT;

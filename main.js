@@ -1,73 +1,48 @@
-var Twitter = require("twit");
-var schedule = require('node-schedule');
-
-var personal = require("./personal.js").data;
-
-var tBotConfig = {
-    consumer_key: personal.twitter.consumer_key,
-    consumer_secret: personal.twitter.consumer_secret,
-    access_token: personal.twitter.access_key,
-    access_token_secret: personal.twitter.access_secret
-};
-var tBot = new Twitter( tBotConfig );
-function wSendTweet( wTweet ) {
-	return new Promise( async function( resolve , reject ) {
-		try {
-			tBot.post( 'statuses/update' , { status: wTweet } , function( error , tweet , response ) {
-				setTimeout( async function() {
-					console.log( "\nTWEET SENT --> " );
-					console.log( wTweet );
-					resolve( response );
-				} , 2000 );
-			});
-		}
-		catch(err) { console.log( "ERROR SENDING TWEET --> " + err); reject(err); }
-	});
-}
-
-async function enumerateTweets( wResults ) {
-	if ( !wResults ) { return; }
-	if ( wResults.length < 1 ) { return; }
-	for ( var i = 0; i < wResults.length; ++i ) {
-		await wSendTweet( wResults[ i ] );
-	}
-}
-
-function printNowTime() {
-	var today = new Date();
-	var wTY = today.getFullYear();
-	var wTM = ( today.getMonth() + 1 );
-	var wTD = today.getDate();
-	var wTH = today.getHours();
-	var wTM = today.getMinutes();
-	console.log(  wTY + "-" + wTM + "-" + wTD + " === " + wTH + ":" + wTM + "\n" );
-}
-
-const wPubMedManager = require("./pubmedScanner.js");
-var j1 = schedule.scheduleJob( "01 */1 * * *" , async function() {
-	console.log( "\nPubMed Search-Task Started @ " );
-	printNowTime();
-	var wR = await wPubMedManager.searchPublishedTodayTitle( [ "autism" , "autistic" ] );
-	console.log( "\nPubMed Search-Task Ended @ " );
-	printNowTime();	
-	enumerateTweets( wR );
+process.on( "unhandledRejection" , function( reason , p ) {
+	console.error( reason, "Unhandled Rejection at Promise" , p );
+	console.trace();
+});
+process.on( "uncaughtException" , function( err ) {
+	console.error( err , "Uncaught Exception thrown" );
+	console.trace();
 });
 
-const wSubredditManager = require("./subredditScanner.js");
-var j2 = schedule.scheduleJob( "05 */1 * * *" , async function(){
- 	console.log( "\nSubreddit Search-New-Task Started @ " );
-	printNowTime();
-	var wR = await wSubredditManager.searchSubreddit( "science" , "new" , [ "autis" ] );
-	console.log( "\nSubreddit Search-New-Task Ended @ " );
-	printNowTime();	
-	enumerateTweets( wR );
-});
+const schedule = require( "node-schedule" );
 
-var j3 = schedule.scheduleJob( "10 */2 * * *" , async function(){
- 	console.log( "\nSubreddit Search-Top-Task Started @ " );
-	printNowTime();
-	var wR = await wSubredditManager.searchSubreddit( "science" , "top" , [ "autis" ] );
-	console.log( "\nSubreddit Search-Top-Task Ended @ " );
-	printNowTime();	
-	enumerateTweets( wR );
-});
+// Scanners
+var redis = null;
+var PUB_MED_MAN = SUBREDDIT_MAN = null;
+var JOB_IDS = [];
+
+( async ()=> {
+
+	await require( "./UTILS/redisManager.js" ).initialize();
+	console.log( "RedisManager Ready" );
+	//await require( "./UTILS/tweetManager.js" ).initialize();
+	//console.log( "TweetManager Ready" );
+
+	//PUB_MED_MAN = require("./SCANNERS/pubmedManager.js");
+	SUBREDDIT_MAN = require("./SCANNERS/subredditManager.js");
+	
+	//await PUB_MED_MAN.searchPublishedTodayTitle( [ "autism" , "autistic" ] );
+	await SUBREDDIT_MAN.searchSubreddit( "science" , "new" , [ "autis" ] );
+
+	// JOB_IDS.push( { name: "PUB_MED_HOURLY" , pid: schedule.scheduleJob( "01 */1 * * *" ,
+	// 	async function() {
+	// 		await PUB_MED_MAN.searchPublishedTodayTitle( [ "autism" , "autistic" ] );
+	// 	}
+	// )});
+
+	// JOB_IDS.push( { name: "SUBREDDIT_NEW" , pid: schedule.scheduleJob( "05 */1 * * *" ,
+	// 	async function() {
+	// 		await SUBREDDIT_MAN.searchSubreddit( "science" , "new" , [ "autis" ] );
+	// 	}
+	// )});
+
+	// JOB_IDS.push( { name: "SUBREDDIT_TOP" , pid: schedule.scheduleJob( "10 */2 * * *" ,
+	// 	async function() {
+	// 		await SUBREDDIT_MAN.searchSubreddit( "science" , "top" , [ "autis" ] );
+	// 	}
+	// )});
+
+})();
