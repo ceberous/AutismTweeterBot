@@ -6,6 +6,8 @@ const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const redis = require( "../UTILS/redisManager.js" ).redis;
 const RU = require( "../UTILS/redisUtils.js" );
 
+function wSleep( ms ) { return new Promise( resolve => setTimeout( resolve , ms ) ); }
+
 var wSearchTerms = [];
 var wFinalTweets = [];
 
@@ -27,11 +29,12 @@ function fetchXML( wURL ) {
 				resolve( wResults );
 			});
 
+			await wSleep( 300 );
 			var wReq = request( wURL );
 			wReq.on( "error" , function( error ) { console.log( error ); resolve( error ); });
 			wReq.on( "response" , function( res ){
 				var stream = this;
-				if ( res.statusCode !== 200) { reject( "Bad status code" ); }
+				if ( res.statusCode !== 200) { console.log( "bad status code" ); resolve( [ "null" ] ); }
 				else { stream.pipe( feedparser ); }
 			});
 
@@ -41,12 +44,14 @@ function fetchXML( wURL ) {
 }
 
 function scanText( wText ) {
+	/*
 	for ( var i = 0; i < wSearchTerms.length; ++i ) {
 		wSTResult = wText.indexOf( wSearchTerms[ i ] );
 		if ( wSTResult != -1 ) {
 			return true;
 		}
 	}
+	*/
 	return false;
 }
 

@@ -21,9 +21,9 @@ var JOB_IDS = [];
 	await require( "./UTILS/tweetManager.js" ).initialize();
 	console.log( "TweetManager Ready" );
 
-	PUB_MED_MAN = require( "./SCANNERS/pubmedManager.js" );
-	SUBREDDIT_MAN = require( "./SCANNERS/subredditManager.js" );
-	NATURE_MAN = require( "./SCANNERS/natureManager.js" );
+	PUB_MED_MAN = require( "./SCANNERS/pubmed.js" );
+	SUBREDDIT_MAN = require( "./SCANNERS/subreddit_Slow.js" );
+	NATURE_MAN = require( "./SCANNERS/nature.js" );
 
 	JOB_IDS.push({ 
 		name: "PUB_MED_HOURLY" ,
