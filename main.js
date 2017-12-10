@@ -22,7 +22,7 @@ var JOB_IDS = [];
 	console.log( "TweetManager Ready" );
 
 	PUB_MED_MAN = require( "./SCANNERS/pubmed.js" );
-	SUBREDDIT_MAN = require( "./SCANNERS/subreddit_Slow.js" );
+	SUBREDDIT_MAN = require( "./SCANNERS/subreddit.js" );
 	NATURE_MAN = require( "./SCANNERS/nature.js" );
 
 	JOB_IDS.push({ 

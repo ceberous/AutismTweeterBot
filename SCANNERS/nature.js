@@ -1,16 +1,23 @@
 const request = require( "request" );
-const puppeteer = require('puppeteer');
 const cheerio = require( "cheerio" );
-const { map } = require( "p-iteration" );
+
+
+// https://github.com/GoogleChrome/puppeteer
+// https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#
+// Ubuntu Install , especially for cloud ubuntu
+// wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+// sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+// sudo apt-get update
+// apt-get install -y google-chrome-unstable
+// sudo apt-get install libx11-xcb-dev
+const puppeteer = require( "puppeteer" );
+
 
 const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const redis = require( "../UTILS/redisManager.js" ).redis;
 const RU = require( "../UTILS/redisUtils.js" );
-
-// https://github.com/GoogleChrome/puppeteer
-// https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#
 
 const DX_DOI_BASE_URL = "http://dx.doi.org";
 const SCI_HUB_BASE_URL = DX_DOI_BASE_URL + ".sci-hub.tw/";

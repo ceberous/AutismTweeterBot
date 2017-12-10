@@ -11,12 +11,11 @@ function wSleep( ms ) { return new Promise( resolve => setTimeout( resolve , ms 
 var wSearchTerms = [];
 var wFinalTweets = [];
 
-function fetchXML( wURL ) {
-	return new Promise( async function( resolve , reject ) {
+function TRY_REQUEST( wURL ) {
+	return new Promise( function( resolve , reject ) {
 		try {
-			console.log( "Searching --> " + wURL );
+			
 			var wResults = [];
-
 			var feedparser = new FeedParser( [{ "normalize": true , "feedurl": wURL }] );
 			feedparser.on( "error" , function( error ) { console.log( error ); reject( error ); } );
 			feedparser.on( "readable" , function () {
@@ -29,12 +28,11 @@ function fetchXML( wURL ) {
 				resolve( wResults );
 			});
 
-			await wSleep( 300 );
 			var wReq = request( wURL );
 			wReq.on( "error" , function( error ) { console.log( error ); resolve( error ); });
 			wReq.on( "response" , function( res ){
 				var stream = this;
-				if ( res.statusCode !== 200) { console.log( "bad status code" ); resolve( [ "null" ] ); }
+				if ( res.statusCode !== 200) { console.log( "bad status code" ); resolve("null"); return; }
 				else { stream.pipe( feedparser ); }
 			});
 
@@ -43,15 +41,42 @@ function fetchXML( wURL ) {
 	});
 }
 
+function fetchXML( wURL ) {
+	return new Promise( async function( resolve , reject ) {
+		try {
+			
+			console.log( "Searching --> " + wURL );
+			var wResults = [];
+
+			var RETRY_COUNT = 3;
+			var SUCCESS = false;
+
+			while ( !SUCCESS ) {
+				if ( RETRY_COUNT < 0 ) { SUCCESS = true; }
+				wResults = await TRY_REQUEST( wURL );
+				if ( wResults !== "null" ) { SUCCESS = true; }
+				else { 
+					console.log( "retrying again" );
+					RETRY_COUNT = RETRY_COUNT - 1;
+					await wSleep( 2000 );
+				}
+			}
+			resolve( wResults );
+
+		}
+		catch( error ) { console.log( error ); reject( error ); }
+	});
+}
+
 function scanText( wText ) {
-	/*
+	
 	for ( var i = 0; i < wSearchTerms.length; ++i ) {
-		wSTResult = wText.indexOf( wSearchTerms[ i ] );
+		var wSTResult = wText.indexOf( wSearchTerms[ i ] );
 		if ( wSTResult != -1 ) {
 			return true;
 		}
 	}
-	*/
+	
 	return false;
 }
 
@@ -102,15 +127,20 @@ function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 
 			// 3.) Get 'Comment' Threads for each 'Top' Thread
 			var wTopCommentURLS = wTopThreads.map( x => x["link"] + ".rss" );
-			var wTopCommentsThreads = await map( wTopCommentURLS , wURL => fetchXML( wURL ) ); 
-			wTopCommentsThreads = wTopCommentsThreads.map( x => x.shift() ); // 1st one is "main" url
+			var wTopCommentsThreads = await map( wTopCommentURLS , wURL => fetchXML( wURL ) );
+			wTopCommentsThreads = wTopCommentsThreads.map( function( x ) {
+				try{ x.shift(); return x; }  // 1st one is "main" url
+				catch( e ) { return []; } // this 'knocks-out' any 'bad/empty' requests
+			});
 			wTopCommentsThreads = [].concat.apply( [] , wTopCommentsThreads );
 
 			// 4.) Get 'Single' Threads for each 'Comment' Thread
 			var wSingleCommentURLS = wTopCommentsThreads.map( x => x["link"] + ".rss" );
 			var wSingleThreads = await map( wSingleCommentURLS , wURL => fetchXML( wURL ) );
 			wSingleThreads = [].concat.apply( [] , wSingleThreads );
-			
+
+			console.log( "\nTotal Single Threads to Search === " + wSingleThreads.length.toString() + "\n" );
+
 			// 5.) Finally, Search over All Single Comments
 			var wResults = await map( wSingleThreads , wThread => SEARCH_SINGLE_THREAD( wThread ) );
 			wResults = [].concat.apply( [] , wResults );
