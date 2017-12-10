@@ -93,7 +93,7 @@ function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 			var wTopCommentTitles = wTopThreads.map( x => x["atom:title"]["#"].toLowerCase() );
 			wTopCommentTitles = wTopCommentTitles.filter( x => scanText( x ) === true );
 			wTopCommentTitles =  wTopCommentTitles.map( x => "#AutismComments " + x );
-			wFinalTweets = wFinalTweets.concat( wTopCommentTitles );
+			wFinalTweets = [].concat.apply( [] , wTopCommentTitles );
 
 			// 3.) Get 'Comment' Threads for each 'Top' Thread
 			var wTopCommentURLS = wTopThreads.map( x => x["link"] + ".rss" );
