@@ -11,7 +11,7 @@ const schedule = require( "node-schedule" );
 
 // Scanners
 var redis = null;
-var PUB_MED_MAN = SUBREDDIT_MAN = null;
+var PUB_MED_MAN = SUBREDDIT_MAN = NATURE_MAN = null;
 var JOB_IDS = [];
 
 ( async ()=> {
