@@ -1,7 +1,6 @@
 const request = require( "request" );
 const cheerio = require( "cheerio" );
 
-
 // https://github.com/GoogleChrome/puppeteer
 // https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#
 // Ubuntu Install , especially for cloud ubuntu
@@ -60,6 +59,25 @@ function PARSE_PUPPETEER(){
 						scihubURL: SCI_HUB_BASE_URL + wDOIS[ i ]
 					});
 				}			
+			}
+
+			// Cleanup FinalResults for some reason
+			var wL_Uneq = {};
+			for ( var i = 0; i < wFinalResults.length; ++i ) {
+				if ( !wL_Uneq[ wFinalResults[ i ][ "doiB64" ] ] ) {
+					wL_Uneq[ "doiB64" ] = wFinalResults[ i ];
+				}
+			}
+			wFinalResults = null;
+			wFinalResults = [];
+			for ( var item in wL_Uneq ) {
+				wFinalResults.push({
+					doi: wL_Uneq[ item ][ "doi" ] ,
+					doiB64: item ,
+					title: wL_Uneq[ item ][ "title" ] ,
+					mainURL:  wL_Uneq[ item ][ "mainURL" ] ,
+					scihubURL: wL_Uneq[ item ][ "scihubURL" ]
+				});
 			}
 
 			resolve();
@@ -147,6 +165,7 @@ function SEARCH_TODAY() {
 			PrintNowTime();
 
 			wResults = null;
+			wFinalResults = null;
 			wFinalResults = [];
 			resolve();
 		}

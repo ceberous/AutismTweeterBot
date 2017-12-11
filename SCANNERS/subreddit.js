@@ -14,7 +14,7 @@ var wFinalTweets = [];
 function TRY_REQUEST( wURL ) {
 	return new Promise( function( resolve , reject ) {
 		try {
-			
+
 			var wResults = [];
 			var feedparser = new FeedParser( [{ "normalize": true , "feedurl": wURL }] );
 			feedparser.on( "error" , function( error ) { console.log( error ); reject( error ); } );
@@ -72,7 +72,7 @@ function scanText( wText ) {
 	
 	for ( var i = 0; i < wSearchTerms.length; ++i ) {
 		var wSTResult = wText.indexOf( wSearchTerms[ i ] );
-		if ( wSTResult != -1 ) {
+		if ( wSTResult !== -1 ) {
 			return true;
 		}
 	}
