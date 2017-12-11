@@ -110,7 +110,7 @@ const R_GLOBAL_ALREADY_TRACKED = "SCANNERS.SUBREDDIT.ALREADY_TRACKED";
 function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
-
+			console.log( "" );
 			console.log( "\nStarted Subbreddit Scan" );
 			PrintNowTime();
 
@@ -167,6 +167,7 @@ function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 			wSearchTerms = [];
 			wFinalTweets = [];
 			console.log( "\nSubbreddit Scan Finished" );
+			console.log( "" );
 			PrintNowTime();			
 			resolve();
 		}

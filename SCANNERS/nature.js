@@ -65,7 +65,7 @@ function PARSE_PUPPETEER(){
 			var wL_Uneq = {};
 			for ( var i = 0; i < wFinalResults.length; ++i ) {
 				if ( !wL_Uneq[ wFinalResults[ i ][ "doiB64" ] ] ) {
-					wL_Uneq[ "doiB64" ] = wFinalResults[ i ];
+					wL_Uneq[ wFinalResults[ i ][ "doiB64" ] ] = wFinalResults[ i ];
 				}
 			}
 			wFinalResults = null;
@@ -128,6 +128,10 @@ function SEARCH_TODAY() {
 	return new Promise( async function( resolve , reject ) {
 		try {
 			
+			console.log( "" );
+			console.log( "\nNature.com Scan Started" );
+			PrintNowTime();
+
 			// 1.) Fetch New Search Results
 			await FETCH_PUPPETEER();
 			console.log( wFinalResults );
@@ -162,6 +166,7 @@ function SEARCH_TODAY() {
 			}
 			await TweetResults( wFormattedTweets );
 			console.log( "\nNature.com Scan Finished" );
+			console.log( "" );
 			PrintNowTime();
 
 			wResults = null;

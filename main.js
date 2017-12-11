@@ -9,11 +9,10 @@ process.on( "uncaughtException" , function( err ) {
 
 
 const schedule = require( "node-schedule" );
+var JOB_IDS = [];
 
 // Scanners
-var redis = null;
-var PUB_MED_MAN = SUBREDDIT_MAN = NATURE_MAN = null;
-var JOB_IDS = [];
+var PUB_MED_MAN = SUBREDDIT_MAN = NATURE_MAN = SCIENCE_DIRECT_MAN = null;
 
 ( async ()=> {
 
@@ -25,6 +24,8 @@ var JOB_IDS = [];
 	PUB_MED_MAN = require( "./SCANNERS/pubmed.js" );
 	SUBREDDIT_MAN = require( "./SCANNERS/subreddit.js" );
 	NATURE_MAN = require( "./SCANNERS/nature.js" );
+	NATURE_MAN = require( "./SCANNERS/nature.js" );
+	SCIENCE_DIRECT_MAN = require( "./SCANNERS/scienceDirect.js" );
 
 	JOB_IDS.push({ 
 		name: "PUB_MED_HOURLY" ,
@@ -42,7 +43,7 @@ var JOB_IDS = [];
 
 	JOB_IDS.push({
 		name: "SUBREDDIT_TOP" ,
-		pid: schedule.scheduleJob( "10 */2 * * *" , async function() {
+		pid: schedule.scheduleJob( "10 */1 * * *" , async function() {
 			await SUBREDDIT_MAN.searchSubreddit( "science" , "top" , [ "autis" ] );
 		}
 	)});
@@ -53,5 +54,12 @@ var JOB_IDS = [];
 			await NATURE_MAN.searchToday();
 		}
 	)});
+
+	JOB_IDS.push({ 
+		name: "SCIENCE_DIRECT_MAN" ,
+		pid: schedule.scheduleJob( "20 */3 * * *" , async function() {
+			await SCIENCE_DIRECT_MAN.searchToday();
+		}
+	)});	
 
 })();
