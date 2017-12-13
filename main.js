@@ -60,4 +60,11 @@ var JOB_IDS = [];
 		}
 	)});
 
+	JOB_IDS.push({ 
+		name: "PLOS_ORG" ,
+		pid: schedule.scheduleJob( "50 * * * *" , async function() {
+			await require( "./SCANNERS/plos.js" ).slowSearch();
+		}
+	)});
+
 })();

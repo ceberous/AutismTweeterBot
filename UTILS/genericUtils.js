@@ -1,5 +1,5 @@
-module.exports.printNowTime = function() {
 
+function PRINT_NOW_TIME() {
 	var today = new Date();
 	var wTY = today.getFullYear();
 	var wTM = ( today.getMonth() + 1 );
@@ -7,8 +7,10 @@ module.exports.printNowTime = function() {
 	var wTH = today.getHours();
 	var wTM = today.getMinutes();
 	console.log(  wTY + "-" + wTM + "-" + wTD + " === " + wTH + ":" + wTM + "\n" );
+}
 
-};
+
+module.exports.printNowTime = PRINT_NOW_TIME;
 
 module.exports.encodeBase64 = function( wString ) {
 	if ( !wString ) { return "error"; }
