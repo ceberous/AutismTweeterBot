@@ -61,6 +61,13 @@ var JOB_IDS = [];
 	)});
 
 	JOB_IDS.push({ 
+		name: "MDPI_COM" ,
+		pid: schedule.scheduleJob( "25 */3 * * *" , async function() {
+			await require( "./SCANNERS/mdpi.js" ).search();
+		}
+	)});	
+
+	JOB_IDS.push({ 
 		name: "PLOS_ORG" ,
 		pid: schedule.scheduleJob( "50 * * * *" , async function() {
 			await require( "./SCANNERS/plos.js" ).slowSearch();
