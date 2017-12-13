@@ -16,7 +16,9 @@ function getDOICheerio( wPubMedID , wDOIOnly ) {
 			console.log( "\t --> Cherrio.js --> " + wURL2 );
 			request( wURL2 , function( wErr , wResponse , wBody ){
 
-				var $ = cheerio.load( wBody );
+				try { var $ = cheerio.load( wBody ); }
+				catch(err) { reject( "cheerio load failed" ); return; }
+
 				var wOBJ1 = {};
 				var wDOI = null;
 

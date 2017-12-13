@@ -11,9 +11,6 @@ process.on( "uncaughtException" , function( err ) {
 const schedule = require( "node-schedule" );
 var JOB_IDS = [];
 
-// Scanners
-var PUB_MED_MAN = SUBREDDIT_MAN = NATURE_MAN = SCIENCE_DIRECT_MAN = null;
-
 ( async ()=> {
 
 	await require( "./UTILS/redisManager.js" ).initialize();
@@ -21,45 +18,46 @@ var PUB_MED_MAN = SUBREDDIT_MAN = NATURE_MAN = SCIENCE_DIRECT_MAN = null;
 	await require( "./UTILS/tweetManager.js" ).initialize();
 	console.log( "TweetManager Ready" );
 
-	PUB_MED_MAN = require( "./SCANNERS/pubmed.js" );
-	SUBREDDIT_MAN = require( "./SCANNERS/subreddit.js" );
-	NATURE_MAN = require( "./SCANNERS/nature.js" );
-	NATURE_MAN = require( "./SCANNERS/nature.js" );
-	SCIENCE_DIRECT_MAN = require( "./SCANNERS/scienceDirect.js" );
-
 	JOB_IDS.push({ 
 		name: "PUB_MED_HOURLY" ,
 		pid: schedule.scheduleJob( "01 */1 * * *" , async function() {
-			await PUB_MED_MAN.searchPublishedTodayTitle( [ "autism" , "autistic" ] );
+			await require( "./SCANNERS/pubmed.js" ).searchPublishedTodayTitle( [ "autism" , "autistic" ] );
 		}
 	)});
 
 	JOB_IDS.push({
 		name: "SUBREDDIT_NEW" ,
 		pid: schedule.scheduleJob( "05 */1 * * *" , async function() {
-			await SUBREDDIT_MAN.searchSubreddit( "science" , "new" , [ "autis" ] );
+			await require( "./SCANNERS/subreddit.js" ).searchSubreddit( "science" , "new" , [ "autis" ] );
 		}
 	)});
 
 	JOB_IDS.push({
 		name: "SUBREDDIT_TOP" ,
 		pid: schedule.scheduleJob( "10 */1 * * *" , async function() {
-			await SUBREDDIT_MAN.searchSubreddit( "science" , "top" , [ "autis" ] );
+			await require( "./SCANNERS/subreddit.js" ).searchSubreddit( "science" , "top" , [ "autis" ] );
 		}
 	)});
 
 	JOB_IDS.push({ 
 		name: "NATURE_HOURLY" ,
 		pid: schedule.scheduleJob( "15 */1 * * *" , async function() {
-			await NATURE_MAN.searchToday();
+			await require( "./SCANNERS/nature.js" ).searchToday();
 		}
 	)});
 
 	JOB_IDS.push({ 
-		name: "SCIENCE_DIRECT_MAN" ,
+		name: "SCIENCE_DIRECT" ,
 		pid: schedule.scheduleJob( "20 */3 * * *" , async function() {
-			await SCIENCE_DIRECT_MAN.searchToday();
+			await require( "./SCANNERS/scienceDirect.js" ).searchToday();
 		}
-	)});	
+	)});
+
+	JOB_IDS.push({ 
+		name: "CELL_COM" ,
+		pid: schedule.scheduleJob( "25 */3 * * *" , async function() {
+			await require( "./SCANNERS/cell.js" ).search( "month" );
+		}
+	)});
 
 })();
