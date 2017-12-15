@@ -16,9 +16,7 @@
     "puppeteer": "^0.13.0",
     "redis": "^2.8.0",
     "request": "^2.81.0",
-    "requestretry": "^1.12.2",
     "resolver": "^0.1.12",
-    "twit": "^2.2.9",
-    "xml2js": "^0.4.19"
+    "twit": "^2.2.9"
   }
 }

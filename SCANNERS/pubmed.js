@@ -1,7 +1,7 @@
 const request = require( "request" );
 const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
-const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const redis = require( "../UTILS/redisManager.js" ).redis;
@@ -176,21 +176,7 @@ function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
 			wPubMedResultsWithMetaData = wPubMedResultsWithMetaData.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
 			await RU.delKey( redis , R_PUBMED_NEW_TRACKING );
-			var wFormattedTweets = [];
-			for ( var i = 0; i < wPubMedResultsWithMetaData.length; ++i ) {
-				var wMessage = "#AutismResearchPapers ";
-				if ( wPubMedResultsWithMetaData[i].title.length > 58 ) {
-					wMessage = wMessage + wPubMedResultsWithMetaData[i].title.substring( 0 , 55 );
-					wMessage = wMessage + "...";
-				}
-				else {
-					wMessage = wMessage + wPubMedResultsWithMetaData[i].title.substring( 0 , 58 );
-				}
-				wMessage = wMessage + " " + wPubMedResultsWithMetaData[i].pubmedURL;
-				wMessage = wMessage + " Paper: " + wPubMedResultsWithMetaData[i].scihubURL;
-				wFormattedTweets.push( wMessage );
-			}
-			await TweetResults( wFormattedTweets );
+			await TweetResults( wPubMedResultsWithMetaData );
 
 			console.log( "\nPubMed Hourly Scan Finished" );
 			PrintNowTime();
@@ -199,4 +185,4 @@ function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
-module.exports.searchPublishedTodayTitle = SEARCH_PUBLISHED_TODAY_TITLE;
+module.exports.search = SEARCH_PUBLISHED_TODAY_TITLE;

@@ -3,7 +3,7 @@ const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
 const resolver = require("resolver");
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const redis = require( "../UTILS/redisManager.js" ).redis;
@@ -145,7 +145,7 @@ function PARSE_MAIN_RESULTS( wResults ) {
 const R_SCIENCE_DIRECT_PLACEHOLDER = "SCANNERS.SCIENCE_DIRECT.PLACEHOLDER";
 const R_SCIENCE_DIRECT_NEW_TRACKING = "SCANNERS.SCIENCE_DIRECT.NEW_TRACKING";
 const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
-function STORE_UNEQ_RESULTS_AND_BUILD_TWEETS( wResults ) {
+function STORE_UNEQ_RESULTS( wResults ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
 
@@ -162,30 +162,14 @@ function STORE_UNEQ_RESULTS_AND_BUILD_TWEETS( wResults ) {
 			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
 			await RU.delKey( redis , R_SCIENCE_DIRECT_NEW_TRACKING );
 
-			// Format Tweets
-			var wFormattedTweets = [];
-			for ( var i = 0; i < wResults.length; ++i ) {
-				var wMessage = "#AutismResearchPapers ";
-				if ( wResults[i].title.length > 58 ) {
-					wMessage = wMessage + wResults[i].title.substring( 0 , 55 );
-					wMessage = wMessage + "...";
-				}
-				else {
-					wMessage = wMessage + wResults[i].title.substring( 0 , 58 );
-				}
-				wMessage = wMessage + " " + wResults[i].mainURL;
-				wMessage = wMessage + " Paper: " + wResults[i].scihubURL;
-				wFormattedTweets.push( wMessage );
-			}
-
-			resolve( wFormattedTweets );
+			resolve( wResults );
 		}
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
 
 const SEARCH_CUSTOM_RSS_FEED_URL = "https://rss.sciencedirect.com/getMessage?registrationId=JCGCKFOCKEGLNCIJLCHJKEHCKLKJKDJIMKLEJLIILR";
-function SEARCH_TODAY() {
+function SEARCH_TODAY( wOptions ) {
 	return new Promise( function( resolve , reject ) {
 		try {
 			console.log( SEARCH_CUSTOM_RSS_FEED_URL );
@@ -198,8 +182,7 @@ function SEARCH_TODAY() {
 				}
 				else {
 					var wResults = await PARSE_MAIN_RESULTS( body );
-					var wUneq_Result_Tweets = await STORE_UNEQ_RESULTS_AND_BUILD_TWEETS( wResults );
-					console.log( wUneq_Result_Tweets );
+					var wUneq_Result_Tweets = await STORE_UNEQ_RESULTS( wResults );
 					await TweetResults( wUneq_Result_Tweets );
 					resolve( wResults );
 				}
@@ -208,4 +191,4 @@ function SEARCH_TODAY() {
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
-module.exports.searchToday = SEARCH_TODAY;
+module.exports.search = SEARCH_TODAY;

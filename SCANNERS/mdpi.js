@@ -1,7 +1,7 @@
 const request = require( "request" );
 const cheerio = require( "cheerio" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
@@ -71,7 +71,7 @@ const MDPI_SEARCH_URL = "http://www.mdpi.com/search?year_from=1996&year_to=2017&
 const R_MDPI_PLACEHOLDER = "SCANNERS.MDPI.PLACEHOLDER";
 const R_MPDI_NEW_TRACKING = "SCANNERS.MDPI.NEW_TRACKING";
 const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
-function SEARCH() {
+function SEARCH( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
 
@@ -97,22 +97,7 @@ function SEARCH() {
 			await RU.delKey( redis , R_MPDI_NEW_TRACKING );
 
 			// 3.) Tweet Uneq Results
-			var wFormattedTweets = [];
-			for ( var i = 0; i < wResults.length; ++i ) {
-				var wMessage = "#AutismResearchPapers ";
-				if ( wResults[i].title.length > 58 ) {
-					wMessage = wMessage + wResults[i].title.substring( 0 , 55 );
-					wMessage = wMessage + "...";
-				}
-				else {
-					wMessage = wMessage + wResults[i].title.substring( 0 , 58 );
-				}
-				wMessage = wMessage + " " + wResults[i].mainURL;
-				wMessage = wMessage + " Paper: " + wResults[i].scihubURL;
-				wFormattedTweets.push( wMessage );
-			}
-			//console.log( wFormattedTweets );
-			await TweetResults( wFormattedTweets );
+			await TweetResults( wResults );
 			
 			console.log( "" );
 			console.log( "\nMDPI.com Scan Finished" );

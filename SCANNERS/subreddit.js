@@ -107,16 +107,16 @@ function SEARCH_SINGLE_THREAD( wComments ) {
 const R_SUBREDDIT_PLACEHOLDER = "SCANNERS.SUBREDDIT.PLACEHOLDER";
 const R_PUBMED_NEW_TRACKING = "SCANNERS.SUBREDDIT.NEW_TRACKING";
 const R_GLOBAL_ALREADY_TRACKED = "SCANNERS.SUBREDDIT.ALREADY_TRACKED";
-function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
+function SEARCH_SUBREDDIT( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
 			console.log( "" );
 			console.log( "\nStarted Subbreddit Scan" );
 			PrintNowTime();
-
+			
 			// 1.) Get 'Top' Level Threads
-			wSearchTerms = wTerms;
-			var wMainURL = "https://www.reddit.com/r/" + wSubreddit + "/" + wSection + "/.rss";
+			wSearchTerms = wOptions[ 2 ];
+			var wMainURL = "https://www.reddit.com/r/" + wOptions[ 0 ] + "/" + wOptions[ 1 ] + "/.rss";
 			var wTopThreads = await fetchXML( wMainURL );
 
 			// 2.) Search the Each Title
@@ -174,4 +174,4 @@ function SEARCH_SUBREDDIT( wSubreddit , wSection , wTerms ) {
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
-module.exports.searchSubreddit = SEARCH_SUBREDDIT;
+module.exports.search = SEARCH_SUBREDDIT;

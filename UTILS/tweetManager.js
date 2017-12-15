@@ -55,6 +55,33 @@ function ENUMERATE_TWEETS( wResults ) {
 	});
 }
 
+function FORMAT_PAPERS_AND_TWEET( wResults ) {
+	return new Promise( async function( resolve , reject ) {
+		try {
+
+			var wFormattedTweets = [];
+			for ( var i = 0; i < wResults.length; ++i ) {
+				var wMessage = "#AutismResearchPapers ";
+				if ( wResults[i].title.length > 58 ) {
+					wMessage = wMessage + wResults[i].title.substring( 0 , 55 );
+					wMessage = wMessage + "...";
+				}
+				else {
+					wMessage = wMessage + wResults[i].title.substring( 0 , 58 );
+				}
+				wMessage = wMessage + " " + wResults[i].pubmedURL;
+				wMessage = wMessage + " Paper: " + wResults[i].scihubURL;
+				wFormattedTweets.push( wMessage );
+			}
+			console.log( wFormattedTweets );
+			await ENUMERATE_TWEETS( wFormattedTweets );
+			resolve();
+
+		}
+		catch( error ) { console.log( error ); reject( error ); }
+	});
+}
 
 module.exports.initialize = INITIALIZE;
 module.exports.enumerateTweets = ENUMERATE_TWEETS;
+module.exports.formatPapersAndTweet = FORMAT_PAPERS_AND_TWEET;

@@ -12,7 +12,7 @@ const cheerio = require( "cheerio" );
 const puppeteer = require( "puppeteer" );
 
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const redis = require( "../UTILS/redisManager.js" ).redis;
@@ -124,7 +124,7 @@ function FETCH_PUPPETEER(){
 const R_NATURE_PLACEHOLDER = "SCANNERS.NATURE.PLACEHOLDER";
 const R_NATURE_NEW_TRACKING = "SCANNERS.NATURE.NEW_TRACKING";
 const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
-function SEARCH_TODAY() {
+function SEARCH_TODAY( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
 			
@@ -148,23 +148,8 @@ function SEARCH_TODAY() {
 			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
 			wFinalResults = wFinalResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
 			await RU.delKey( redis , R_NATURE_NEW_TRACKING );
-
-			// 3.) Tweet Uneq Results
-			var wFormattedTweets = [];
-			for ( var i = 0; i < wFinalResults.length; ++i ) {
-				var wMessage = "#AutismResearchPapers ";
-				if ( wFinalResults[i].title.length > 58 ) {
-					wMessage = wMessage + wFinalResults[i].title.substring( 0 , 55 );
-					wMessage = wMessage + "...";
-				}
-				else {
-					wMessage = wMessage + wFinalResults[i].title.substring( 0 , 58 );
-				}
-				wMessage = wMessage + " " + wFinalResults[i].mainURL;
-				wMessage = wMessage + " Paper: " + wFinalResults[i].scihubURL;
-				wFormattedTweets.push( wMessage );
-			}
-			await TweetResults( wFormattedTweets );
+			await TweetResults( wFinalResults );
+			
 			console.log( "\nNature.com Scan Finished" );
 			console.log( "" );
 			PrintNowTime();
@@ -177,4 +162,4 @@ function SEARCH_TODAY() {
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
-module.exports.searchToday = SEARCH_TODAY;
+module.exports.search = SEARCH_TODAY;

@@ -7,7 +7,6 @@ process.on( "uncaughtException" , function( err ) {
 	console.trace();
 });
 
-
 const schedule = require( "node-schedule" );
 var JOB_IDS = [];
 
@@ -15,41 +14,41 @@ var JOB_IDS = [];
 
 	await require( "./UTILS/redisManager.js" ).initialize();
 	console.log( "RedisManager Ready" );
-	await require( "./UTILS/tweetManager.js" ).initialize();
-	console.log( "TweetManager Ready" );
+	// await require( "./UTILS/tweetManager.js" ).initialize();
+	// console.log( "TweetManager Ready" );
 
 	JOB_IDS.push({ 
 		name: "PUB_MED_HOURLY" ,
 		pid: schedule.scheduleJob( "01 */1 * * *" , async function() {
-			await require( "./SCANNERS/pubmed.js" ).searchPublishedTodayTitle( [ "autism" , "autistic" ] );
+			await require( "./SCANNERS/pubmed.js" ).search( [ "autism" , "autistic" ] );
 		}
 	)});
 
 	JOB_IDS.push({
 		name: "SUBREDDIT_NEW" ,
 		pid: schedule.scheduleJob( "05 */1 * * *" , async function() {
-			await require( "./SCANNERS/subreddit.js" ).searchSubreddit( "science" , "new" , [ "autis" ] );
+			await require( "./SCANNERS/subreddit.js" ).search( [ "science" , "new" , [ "autis" ] ] );
 		}
 	)});
 
 	JOB_IDS.push({
 		name: "SUBREDDIT_TOP" ,
 		pid: schedule.scheduleJob( "10 */1 * * *" , async function() {
-			await require( "./SCANNERS/subreddit.js" ).searchSubreddit( "science" , "top" , [ "autis" ] );
+			await require( "./SCANNERS/subreddit.js" ).search( [ "science" , "top" , [ "autis" ] ] );
 		}
 	)});
 
 	JOB_IDS.push({ 
 		name: "NATURE_HOURLY" ,
 		pid: schedule.scheduleJob( "15 */1 * * *" , async function() {
-			await require( "./SCANNERS/nature.js" ).searchToday();
+			await require( "./SCANNERS/nature.js" ).search();
 		}
 	)});
 
 	JOB_IDS.push({ 
 		name: "SCIENCE_DIRECT" ,
 		pid: schedule.scheduleJob( "20 */3 * * *" , async function() {
-			await require( "./SCANNERS/scienceDirect.js" ).searchToday();
+			await require( "./SCANNERS/scienceDirect.js" ).search();
 		}
 	)});
 
@@ -76,8 +75,8 @@ var JOB_IDS = [];
 
 	JOB_IDS.push({ // large
 		name: "PLOS_ORG" ,
-		pid: schedule.scheduleJob( "50 * * * *" , async function() {
-			await require( "./SCANNERS/plos.js" ).slowSearch();
+		pid: schedule.scheduleJob( "50 0 * * *" , async function() {
+			await require( "./SCANNERS/plos.js" ).search();
 		}
 	)});
 

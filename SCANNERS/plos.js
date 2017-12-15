@@ -2,7 +2,7 @@ const request = require( "request" );
 const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const redis = require( "../UTILS/redisManager.js" ).redis;
@@ -200,23 +200,8 @@ function SEARCH( wJournals ) {
 			wFinal_Found_Results = wFinal_Found_Results.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
 			await RU.delKey( redis , R_PLOS_NEW_TRACKING );
 
-			// 4.) Format Tweets
-			var wFormattedTweets = [];
-			for ( var i = 0; i < wFinal_Found_Results.length; ++i ) {
-				var wMessage = "#AutismResearchPapers ";
-				if ( wFinal_Found_Results[i].title.length > 58 ) {
-					wMessage = wMessage + wFinal_Found_Results[i].title.substring( 0 , 55 );
-					wMessage = wMessage + "...";
-				}
-				else {
-					wMessage = wMessage + wFinal_Found_Results[i].title.substring( 0 , 58 );
-				}
-				wMessage = wMessage + " " + wFinal_Found_Results[i].mainURL;
-				wMessage = wMessage + " Paper: " + wFinal_Found_Results[i].scihubURL;
-				wFormattedTweets.push( wMessage );
-			}
-			console.log( wFormattedTweets );
-			//await TweetResults( wFormattedTweets );
+			// 4.) Tweet Results
+			await TweetResults( wFinal_Found_Results );
 
 			console.log( "" );
 			console.log( "PLOS.org Scan Finished" );
@@ -229,7 +214,7 @@ function SEARCH( wJournals ) {
 module.exports.search = SEARCH;
 
 
-function SLOW_SEARCH() {
+function SLOW_SEARCH( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
 			
@@ -247,4 +232,4 @@ function SLOW_SEARCH() {
 		catch( error ) { console.log( error ); reject( error ); }
 	});
 }
-module.exports.slowSearch = SLOW_SEARCH;
+module.exports.search = SLOW_SEARCH;

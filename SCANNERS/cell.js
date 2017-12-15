@@ -2,7 +2,7 @@
 const puppeteer = require( "puppeteer" );
 const cheerio = require( "cheerio" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const redis = require( "../UTILS/redisManager.js" ).redis;
@@ -73,7 +73,7 @@ function FETCH_RESULTS( wURL ) {
 const R_CELL_PLACEHOLDER = "SCANNERS.CELL.PLACEHOLDER";
 const R_CELL_NEW_TRACKING = "SCANNERS.CELL.NEW_TRACKING";
 const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
-function SEARCH( wTimeLine ) {
+function SEARCH( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
 
@@ -83,8 +83,10 @@ function SEARCH( wTimeLine ) {
 
 			// 1.) Search and Gather Results
 			var wTimeLine_Url = SEARCH_THIS_WEEK_URL;
-			if ( wTimeLine === "month" ) {
-				wTimeLine_Url = SEARCH_PAST_MONTH_URL;
+			if ( wOptions[ 0 ] ) {
+				if ( wOptions[ 0 ] === "month" ) {
+					wTimeLine_Url = SEARCH_PAST_MONTH_URL;
+				}
 			}
 			var wResults = await FETCH_RESULTS( wTimeLine_Url );
 			console.log( wResults );
@@ -96,29 +98,14 @@ function SEARCH( wTimeLine ) {
 			await RU.delKey( redis , R_CELL_PLACEHOLDER );
 			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
 
+			// 3.) Tweet Uneq Results
 			const wNewTracking = await RU.getFullSet( redis , R_CELL_NEW_TRACKING );
 			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
 			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
 			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
 			await RU.delKey( redis , R_CELL_NEW_TRACKING );
+			await TweetResults( wResults );
 
-			// 3.) Tweet Uneq Results
-			var wFormattedTweets = [];
-			for ( var i = 0; i < wResults.length; ++i ) {
-				var wMessage = "#AutismResearchPapers ";
-				if ( wResults[i].title.length > 58 ) {
-					wMessage = wMessage + wResults[i].title.substring( 0 , 55 );
-					wMessage = wMessage + "...";
-				}
-				else {
-					wMessage = wMessage + wResults[i].title.substring( 0 , 58 );
-				}
-				wMessage = wMessage + " " + wResults[i].mainURL;
-				wMessage = wMessage + " Paper: " + wResults[i].scihubURL;
-				wFormattedTweets.push( wMessage );
-			}
-			console.log( wFormattedTweets );
-			await TweetResults( wFormattedTweets );
 			console.log( "" );
 			console.log( "Cell.com Scan Finished" );
 			PrintNowTime();
