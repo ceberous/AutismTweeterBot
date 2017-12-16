@@ -69,8 +69,12 @@ function FORMAT_PAPERS_AND_TWEET( wResults ) {
 				else {
 					wMessage = wMessage + wResults[i].title.substring( 0 , 58 );
 				}
-				wMessage = wMessage + " " + wResults[i].mainURL;
-				wMessage = wMessage + " Paper: " + wResults[i].scihubURL;
+				if ( wResults[i].mainURL ) {
+					wMessage = wMessage + " " + wResults[i].mainURL;
+				}
+				if ( wResults[i].scihubURL ) {
+					wMessage = wMessage + " Paper: " + wResults[i].scihubURL;
+				}
 				wFormattedTweets.push( wMessage );
 			}
 			console.log( wFormattedTweets );

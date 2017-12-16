@@ -86,10 +86,17 @@ var JOB_IDS = [];
 			await require( "./SCANNERS/oup.js" ).search();
 		}
 	)});
+
+	JOB_IDS.push({ 
+		name: "SPECTRUM_NEWS" ,
+		pid: schedule.scheduleJob( "50 */1 * * *" , async function() {
+			await require( "./SCANNERS/spectrumNews.js" ).search();
+		}
+	)});
 	
 	JOB_IDS.push({ // large
 		name: "PLOS_ORG" ,
-		pid: schedule.scheduleJob( { hour: 01 , minute: 50 } , async function() {
+		pid: schedule.scheduleJob( { hour: 01 , minute: 55 } , async function() {
 			await require( "./SCANNERS/plos.js" ).search();
 		}
 	)});

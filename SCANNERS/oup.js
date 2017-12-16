@@ -1,11 +1,9 @@
 const cheerio = require( "cheerio" );
 const puppeteer = require( "puppeteer" );
-//const { map } = require( "p-iteration" );
 
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
-const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
 const redis = require( "../UTILS/redisManager.js" ).redis;
 const RU = require( "../UTILS/redisUtils.js" );
 
