@@ -87,13 +87,21 @@ var JOB_IDS = [];
 		}
 	)});
 
-	JOB_IDS.push({ 
+	JOB_IDS.push({ // fast-xml-feed
 		name: "SPECTRUM_NEWS" ,
 		pid: schedule.scheduleJob( "50 */1 * * *" , async function() {
 			await require( "./SCANNERS/spectrumNews.js" ).search();
 		}
 	)});
+
+	JOB_IDS.push({ // fast-xml-feed
+		name: "SPRINGER_COM" ,
+		pid: schedule.scheduleJob( "53 */1 * * *" , async function() {
+			await require( "./SCANNERS/springer.js" ).search();
+		}
+	)});
 	
+
 	JOB_IDS.push({ // large
 		name: "PLOS_ORG" ,
 		pid: schedule.scheduleJob( { hour: 01 , minute: 55 } , async function() {
