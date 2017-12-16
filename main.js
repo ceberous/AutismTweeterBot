@@ -100,14 +100,19 @@ var JOB_IDS = [];
 			await require( "./SCANNERS/springer.js" ).search();
 		}
 	)});
-	
 
-	JOB_IDS.push({ // large
-		name: "PLOS_ORG" ,
-		pid: schedule.scheduleJob( { hour: 01 , minute: 55 } , async function() {
-			await require( "./SCANNERS/plos.js" ).search();
+	JOB_IDS.push({ // fast-xml-feed
+		name: "KARGER_COM" ,
+		pid: schedule.scheduleJob( "55 */1 * * *" , async function() {
+			await require( "./SCANNERS/karger.js" ).search();
 		}
 	)});
 
+	JOB_IDS.push({ // large
+		name: "PLOS_ORG" ,
+		pid: schedule.scheduleJob( { hour: 01 , minute: 57 } , async function() {
+			await require( "./SCANNERS/plos.js" ).search();
+		}
+	)});
 
 })();

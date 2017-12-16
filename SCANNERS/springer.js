@@ -141,7 +141,7 @@ function SEARCH() {
 			var wResults = await fetchXML( wURL );
 			wResults = await PARSE_XML_RESULTS( wResults );
 
-			//2.) Compare to Already 'Tracked' DOIs and Store Uneq
+			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
 			var b64_DOIS = wResults.map( x => x[ "doiB64" ] );
 			await RU.setSetFromArray( redis , R_SPRINGER_PLACEHOLDER , b64_DOIS );
 			await RU.setDifferenceStore( redis , R_SPRINGER_NEW_TRACKING , R_SPRINGER_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
@@ -154,7 +154,7 @@ function SEARCH() {
 			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
 			await RU.delKey( redis , R_SPRINGER_NEW_TRACKING );
 			
-			// // 3.) Tweet Results
+			// 3.) Tweet Results
 			await TweetResults( wResults );
 
 			console.log( "\nSpringer.com Scan Finished" );
