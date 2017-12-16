@@ -53,7 +53,7 @@ function getDOICheerio( wPubMedID , wDOIOnly ) {
 				if ( wDOIOnly ) { resolve( wDOI ); return; }
 
 				wOBJ1.pmid = wPubMedID;
-				wOBJ1.pubmedURL = "https://www.ncbi.nlm.nih.gov/pubmed/" + wPubMedID;
+				wOBJ1.mainURL = "https://www.ncbi.nlm.nih.gov/pubmed/" + wPubMedID;
 				if ( wDOI ) {
 					if ( wDOI.length > 1 ) {
 						wOBJ1[ "doi" ] = wDOI;
@@ -82,7 +82,7 @@ function getPubMedIDInfo( wPubMedID ) {
 				else {
 					body = JSON.parse( body );
 					finalOBJ.pmid = wPubMedID;
-					finalOBJ.pubmedURL = "https://www.ncbi.nlm.nih.gov/pubmed/" + wPubMedID;
+					finalOBJ.mainURL = "https://www.ncbi.nlm.nih.gov/pubmed/" + wPubMedID;
 					if ( body[ "title" ] ) { finalOBJ.title = body[ "title" ]; }
 					if ( body[ "doi" ] ) { 
 						finalOBJ.doi = body[ "doi" ]; 

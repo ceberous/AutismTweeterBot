@@ -14,8 +14,8 @@ var JOB_IDS = [];
 
 	await require( "./UTILS/redisManager.js" ).initialize();
 	console.log( "RedisManager Ready" );
-	// await require( "./UTILS/tweetManager.js" ).initialize();
-	// console.log( "TweetManager Ready" );
+	await require( "./UTILS/tweetManager.js" ).initialize();
+	console.log( "TweetManager Ready" );
 
 	JOB_IDS.push({ 
 		name: "PUB_MED_HOURLY" ,
@@ -73,13 +73,19 @@ var JOB_IDS = [];
 		}
 	)});
 
-	JOB_IDS.push({ // large
-		name: "PLOS_ORG" ,
-		pid: schedule.scheduleJob( "50 0 * * *" , async function() {
-			await require( "./SCANNERS/plos.js" ).search();
+	JOB_IDS.push({ 
+		name: "WILEY_COM" ,
+		pid: schedule.scheduleJob( "40 */1 * * *" , async function() {
+			await require( "./SCANNERS/wiley.js" ).search();;
 		}
 	)});
 
+	JOB_IDS.push({ // large
+		name: "PLOS_ORG" ,
+		pid: schedule.scheduleJob( { hour: 01 , minute: 50 } , async function() {
+			await require( "./SCANNERS/plos.js" ).search();
+		}
+	)});
 	
 
 })();
