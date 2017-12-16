@@ -76,16 +76,23 @@ var JOB_IDS = [];
 	JOB_IDS.push({ 
 		name: "WILEY_COM" ,
 		pid: schedule.scheduleJob( "40 */1 * * *" , async function() {
-			await require( "./SCANNERS/wiley.js" ).search();;
+			await require( "./SCANNERS/wiley.js" ).search();
 		}
 	)});
 
+	JOB_IDS.push({ 
+		name: "OXFORD_ACADEMIC" ,
+		pid: schedule.scheduleJob( "45 */1 * * *" , async function() {
+			await require( "./SCANNERS/oup.js" ).search();
+		}
+	)});
+	
 	JOB_IDS.push({ // large
 		name: "PLOS_ORG" ,
 		pid: schedule.scheduleJob( { hour: 01 , minute: 50 } , async function() {
 			await require( "./SCANNERS/plos.js" ).search();
 		}
 	)});
-	
+
 
 })();
