@@ -78,7 +78,7 @@ function FORMAT_PAPERS_AND_TWEET( wResults ) {
 				wFormattedTweets.push( wMessage );
 			}
 			console.log( wFormattedTweets );
-			await ENUMERATE_TWEETS( wFormattedTweets );
+			//await ENUMERATE_TWEETS( wFormattedTweets );
 			resolve();
 
 		}
