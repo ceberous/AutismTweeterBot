@@ -1,11 +1,8 @@
-const request = require( "request" );
-const FeedParser = require( "feedparser" );
-
 const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
+const FetchXMLFeed = require( "../UTILS/genericUtils.js" ).fetchXMLFeed;
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
 
 const SPECTRUM_NEWS_BASE_URL = "https://spectrumnews.org/feed/";
 
@@ -23,63 +20,6 @@ function scanText( wText ) {
 	}
 	
 	return false;
-}
-
-function TRY_REQUEST( wURL ) {
-	return new Promise( function( resolve , reject ) {
-		try {
-
-			var wResults = [];
-			var feedparser = new FeedParser( [{ "normalize": true , "feedurl": wURL }] );
-			feedparser.on( "error" , function( error ) { console.log( error ); reject( error ); } );
-			feedparser.on( "readable" , function () {
-				var stream = this; 
-				var item;
-				while ( item = stream.read() ) { wResults.push( item ); }
-			});
-
-			feedparser.on( "end" , function() {
-				resolve( wResults );
-			});
-
-			var wReq = request( wURL );
-			wReq.on( "error" , function( error ) { console.log( error ); resolve( error ); });
-			wReq.on( "response" , function( res ){
-				var stream = this;
-				if ( res.statusCode !== 200) { console.log( "bad status code" ); resolve("null"); return; }
-				else { stream.pipe( feedparser ); }
-			});
-
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
-
-function fetchXML( wURL ) {
-	return new Promise( async function( resolve , reject ) {
-		try {
-			
-			console.log( "Searching --> " + wURL );
-			var wResults = [];
-
-			var RETRY_COUNT = 3;
-			var SUCCESS = false;
-
-			while ( !SUCCESS ) {
-				if ( RETRY_COUNT < 0 ) { SUCCESS = true; }
-				wResults = await TRY_REQUEST( wURL );
-				if ( wResults !== "null" ) { SUCCESS = true; }
-				else { 
-					console.log( "retrying again" );
-					RETRY_COUNT = RETRY_COUNT - 1;
-					await wSleep( 2000 );
-				}
-			}
-			resolve( wResults );
-
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
 }
 
 function PARSE_XML_RESULTS( wResults ) {
@@ -111,34 +51,21 @@ function PARSE_XML_RESULTS( wResults ) {
 	});
 }
 
-const R_SPECTRUM_PLACEHOLDER = "SCANNERS.SPECTRUM.PLACEHOLDER";
-const R_SPECTRUM_NEW_TRACKING = "SCANNERS.SPECTRUM.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
+
 function SEARCH() {
 	return new Promise( async function( resolve , reject ) {
 		try {
 
 			console.log( "\nSpectrumNews.org Scan Started" );
-			console.log( "" );
 			PrintNowTime();			
 
 			// 1. ) Fetch Latest Results
-			var wResults = await fetchXML( SPECTRUM_NEWS_BASE_URL );
+			var wResults = await FetchXMLFeed( SPECTRUM_NEWS_BASE_URL );
 			wResults = await PARSE_XML_RESULTS( wResults );
 
 			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = wResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_SPECTRUM_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_SPECTRUM_NEW_TRACKING , R_SPECTRUM_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_SPECTRUM_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
+			wResults = FilterUNEQResultsREDIS( wResults );
 
-			const wNewTracking = await RU.getFullSet( redis , R_SPECTRUM_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_SPECTRUM_NEW_TRACKING );
-			
 			// 3.) Tweet Results
 			var wFormattedTweets = [];
 			for ( var i = 0; i < wResults.length; ++i ) {

@@ -58,7 +58,7 @@ function ENUMERATE_TWEETS( wResults ) {
 function FORMAT_PAPERS_AND_TWEET( wResults ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
-
+			if ( !wResults ) { resolve(); return; }
 			var wFormattedTweets = [];
 			for ( var i = 0; i < wResults.length; ++i ) {
 				var wMessage = "#AutismResearchPapers ";

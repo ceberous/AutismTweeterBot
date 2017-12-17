@@ -1,12 +1,11 @@
-const request = require( "request" );
+const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
 const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
 
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 function wSleep( ms ) { return new Promise( resolve => setTimeout( resolve , ms ) ); }
 
@@ -44,57 +43,10 @@ function GENERATE_NOW_TIME_URLS( wJournals ) {
 	});
 }
 
-function MAKE_REQUEST( wURL ) {
-	return new Promise( async function( resolve , reject ) {
-		try {
-
-			var finalBody = null;
-			function _m_request() {
-				return new Promise( function( resolve , reject ) {
-					try {
-						request( wURL , async function ( err , response , body ) {
-							if ( err ) { resolve("error"); return; }
-							console.log( wURL + "\n\t--> RESPONSE_CODE = " + response.statusCode.toString() );
-							if ( response.statusCode !== 200 ) {
-								console.log( "bad status code ... " );
-								resolve( "error" );
-								return;
-							}
-							else {
-								finalBody = body;
-								resolve();
-								return;
-							}
-						});
-					}
-					catch( error ) { console.log( error ); reject( error ); }
-				});
-			}
-
-			var wRetry_Count = 3;
-			var wSuccess = false;
-			while( !wSuccess ) {
-				if ( wRetry_Count < 0 ) { wSuccess = true; }
-				var xSuccess = await _m_request();
-				if ( xSuccess !== "error" ) { wSuccess = true; }
-				else {
-					wRetry_Count = wRetry_Count - 1;
-					await wSleep( 2000 );
-					console.log( "retrying" );
-				}
-			}
-			resolve( finalBody );
-
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
-
-
 function SEARCH_INDIVIDUAL_PLOS_ARTICLE( wURL ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
-			var wBody = await MAKE_REQUEST( wURL );
+			var wBody = await MakeRequest( wURL );
 			try { var $ = cheerio.load( wBody ); }
 			catch(err) { reject( "cheerio load failed" ); return; }
 
@@ -127,7 +79,7 @@ function GET_MONTHS_RESULTS( wURL ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
 
-			var wMonthsResults = await MAKE_REQUEST( wURL );
+			var wMonthsResults = await MakeRequest( wURL );
 			try { var $ = cheerio.load( wMonthsResults ); }
 			catch(err) { reject( "cheerio load failed" ); return; }
 
@@ -149,10 +101,6 @@ function GET_MONTHS_RESULTS( wURL ) {
 	});
 }
 
-
-const R_PLOS_PLACEHOLDER = "SCANNERS.PLOS.PLACEHOLDER";
-const R_PLOS_NEW_TRACKING = "SCANNERS.PLOS.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
 function SEARCH( wJournals ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -188,17 +136,7 @@ function SEARCH( wJournals ) {
 			//console.log( wFinal_Found_Results );
 
 			// 3.) Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = wFinal_Found_Results.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_PLOS_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_PLOS_NEW_TRACKING , R_PLOS_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_PLOS_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
-
-			const wNewTracking = await RU.getFullSet( redis , R_PLOS_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wFinal_Found_Results = wFinal_Found_Results.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_PLOS_NEW_TRACKING );
+			wFinal_Found_Results = await FilterUNEQResultsREDIS( wFinal_Found_Results );
 
 			// 4.) Tweet Results
 			await TweetResults( wFinal_Found_Results );
@@ -212,7 +150,6 @@ function SEARCH( wJournals ) {
 	});
 }
 module.exports.search = SEARCH;
-
 
 function SLOW_SEARCH( wOptions ) {
 	return new Promise( async function( resolve , reject ) {

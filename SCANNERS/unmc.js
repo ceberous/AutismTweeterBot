@@ -4,8 +4,7 @@ const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 const DX_DOI_BASE_URL = "http://dx.doi.org";
 const SCI_HUB_BASE_URL = DX_DOI_BASE_URL + ".sci-hub.tw/";
@@ -15,9 +14,7 @@ const UNMC_SEARCH_URL_BASE = "https://www.unmc.edu/newsfeed/index.php/json/getne
 const UNMC_ARTICLE_URL_BASE = "https://www.unmc.edu/news.cfm?match=";
 // var wArticleSearchURL = UNMC_ARTICLE_URL_BASE + wArticlID;
 
-const R_UNMC_PLACEHOLDER = "SCANNERS.UNMC.PLACEHOLDER";
-const R_UNMC_NEW_TRACKING = "SCANNERS.UNMC.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
+
 function SEARCH() {
 	return new Promise( async function( resolve , reject ) {
 		try {

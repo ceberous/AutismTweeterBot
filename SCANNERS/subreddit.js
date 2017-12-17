@@ -1,5 +1,4 @@
-const request = require( "request" );
-const FeedParser = require( "feedparser" );
+const FetchXMLFeed = require( "../UTILS/genericUtils.js" ).fetchXMLFeed;
 const { map } = require( "p-iteration" );
 const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
@@ -10,63 +9,6 @@ function wSleep( ms ) { return new Promise( resolve => setTimeout( resolve , ms 
 
 var wSearchTerms = [];
 var wFinalTweets = [];
-
-function TRY_REQUEST( wURL ) {
-	return new Promise( function( resolve , reject ) {
-		try {
-
-			var wResults = [];
-			var feedparser = new FeedParser( [{ "normalize": true , "feedurl": wURL }] );
-			feedparser.on( "error" , function( error ) { console.log( error ); reject( error ); } );
-			feedparser.on( "readable" , function () {
-				var stream = this; 
-				var item;
-				while ( item = stream.read() ) { wResults.push( item ); }
-			});
-
-			feedparser.on( "end" , function() {
-				resolve( wResults );
-			});
-
-			var wReq = request( wURL );
-			wReq.on( "error" , function( error ) { console.log( error ); resolve( error ); });
-			wReq.on( "response" , function( res ){
-				var stream = this;
-				if ( res.statusCode !== 200) { console.log( "bad status code" ); resolve("null"); return; }
-				else { stream.pipe( feedparser ); }
-			});
-
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
-
-function fetchXML( wURL ) {
-	return new Promise( async function( resolve , reject ) {
-		try {
-			
-			console.log( "Searching --> " + wURL );
-			var wResults = [];
-
-			var RETRY_COUNT = 3;
-			var SUCCESS = false;
-
-			while ( !SUCCESS ) {
-				if ( RETRY_COUNT < 0 ) { SUCCESS = true; }
-				wResults = await TRY_REQUEST( wURL );
-				if ( wResults !== "null" ) { SUCCESS = true; }
-				else { 
-					console.log( "retrying again" );
-					RETRY_COUNT = RETRY_COUNT - 1;
-					await wSleep( 2000 );
-				}
-			}
-			resolve( wResults );
-
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
 
 function scanText( wText ) {
 	
@@ -117,7 +59,7 @@ function SEARCH_SUBREDDIT( wOptions ) {
 			// 1.) Get 'Top' Level Threads
 			wSearchTerms = wOptions[ 2 ];
 			var wMainURL = "https://www.reddit.com/r/" + wOptions[ 0 ] + "/" + wOptions[ 1 ] + "/.rss";
-			var wTopThreads = await fetchXML( wMainURL );
+			var wTopThreads = await FetchXMLFeed( wMainURL );
 
 			// 2.) Search the Each Title
 			var wTopCommentTitles = wTopThreads.map( x => x["atom:title"]["#"].toLowerCase() );
@@ -127,7 +69,7 @@ function SEARCH_SUBREDDIT( wOptions ) {
 
 			// 3.) Get 'Comment' Threads for each 'Top' Thread
 			var wTopCommentURLS = wTopThreads.map( x => x["link"] + ".rss" );
-			var wTopCommentsThreads = await map( wTopCommentURLS , wURL => fetchXML( wURL ) );
+			var wTopCommentsThreads = await map( wTopCommentURLS , wURL => FetchXMLFeed( wURL ) );
 			wTopCommentsThreads = wTopCommentsThreads.map( function( x ) {
 				try{ x.shift(); return x; }  // 1st one is "main" url
 				catch( e ) { return []; } // this 'knocks-out' any 'bad/empty' requests
@@ -136,7 +78,7 @@ function SEARCH_SUBREDDIT( wOptions ) {
 
 			// 4.) Get 'Single' Threads for each 'Comment' Thread
 			var wSingleCommentURLS = wTopCommentsThreads.map( x => x["link"] + ".rss" );
-			var wSingleThreads = await map( wSingleCommentURLS , wURL => fetchXML( wURL ) );
+			var wSingleThreads = await map( wSingleCommentURLS , wURL => FetchXMLFeed( wURL ) );
 			wSingleThreads = [].concat.apply( [] , wSingleThreads );
 
 			console.log( "\nTotal Single Threads to Search === " + wSingleThreads.length.toString() + "\n" );

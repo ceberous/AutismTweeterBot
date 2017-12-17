@@ -5,8 +5,7 @@ const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 const DX_DOI_BASE_URL = "http://dx.doi.org";
 const SCI_HUB_BASE_URL = DX_DOI_BASE_URL + ".sci-hub.tw/";
@@ -92,9 +91,7 @@ function CUSTOM_SEARCHER() {
 	});
 }
 
-const R_WILEY_PLACEHOLDER = "SCANNERS.WILEY.PLACEHOLDER";
-const R_WILEY_NEW_TRACKING = "SCANNERS.WILEY.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
+
 function SEARCH( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -107,17 +104,7 @@ function SEARCH( wOptions ) {
 			var finalResults = await CUSTOM_SEARCHER();
 
 			// 2.) Compare and Store 'Uneq' Results
-			var b64_DOIS = finalResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_WILEY_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_WILEY_NEW_TRACKING , R_WILEY_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_WILEY_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
-
-			const wNewTracking = await RU.getFullSet( redis , R_WILEY_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			finalResults = finalResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_WILEY_NEW_TRACKING );
+			finalResults = await FilterUNEQResultsREDIS( finalResults );
 
 			// 3.) Tweet Uneq Results
 			await TweetResults( finalResults );

@@ -6,8 +6,7 @@ const resolver = require("resolver");
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 function wSleep( ms ) { return new Promise( resolve => setTimeout( resolve , ms ) ); }
 
@@ -142,32 +141,6 @@ function PARSE_MAIN_RESULTS( wResults ) {
 }
 
 
-const R_SCIENCE_DIRECT_PLACEHOLDER = "SCANNERS.SCIENCE_DIRECT.PLACEHOLDER";
-const R_SCIENCE_DIRECT_NEW_TRACKING = "SCANNERS.SCIENCE_DIRECT.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
-function STORE_UNEQ_RESULTS( wResults ) {
-	return new Promise( async function( resolve , reject ) {
-		try {
-
-			// Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = wResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_SCIENCE_DIRECT_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_SCIENCE_DIRECT_NEW_TRACKING , R_SCIENCE_DIRECT_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_SCIENCE_DIRECT_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
-
-			const wNewTracking = await RU.getFullSet( redis , R_SCIENCE_DIRECT_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_SCIENCE_DIRECT_NEW_TRACKING );
-
-			resolve( wResults );
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
-
 const SEARCH_CUSTOM_RSS_FEED_URL = "https://rss.sciencedirect.com/getMessage?registrationId=JCGCKFOCKEGLNCIJLCHJKEHCKLKJKDJIMKLEJLIILR";
 function SEARCH_TODAY( wOptions ) {
 	return new Promise( function( resolve , reject ) {
@@ -182,8 +155,8 @@ function SEARCH_TODAY( wOptions ) {
 				}
 				else {
 					var wResults = await PARSE_MAIN_RESULTS( body );
-					var wUneq_Result_Tweets = await STORE_UNEQ_RESULTS( wResults );
-					await TweetResults( wUneq_Result_Tweets );
+					wResults = await FilterUNEQResultsREDIS( wResults );
+					await TweetResults( wResults );
 					resolve( wResults );
 				}
 			});

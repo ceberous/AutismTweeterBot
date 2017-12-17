@@ -1,4 +1,3 @@
-const request = require( "request" );
 const cheerio = require( "cheerio" );
 
 // https://github.com/GoogleChrome/puppeteer
@@ -15,8 +14,7 @@ const puppeteer = require( "puppeteer" );
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 const DX_DOI_BASE_URL = "http://dx.doi.org";
 const SCI_HUB_BASE_URL = DX_DOI_BASE_URL + ".sci-hub.tw/";
@@ -121,9 +119,6 @@ function FETCH_PUPPETEER(){
 	});
 }
 
-const R_NATURE_PLACEHOLDER = "SCANNERS.NATURE.PLACEHOLDER";
-const R_NATURE_NEW_TRACKING = "SCANNERS.NATURE.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
 function SEARCH_TODAY( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -136,18 +131,10 @@ function SEARCH_TODAY( wOptions ) {
 			await FETCH_PUPPETEER();
 			console.log( wFinalResults );
 
-			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = wFinalResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_NATURE_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_NATURE_NEW_TRACKING , R_NATURE_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_NATURE_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
+			// 2.) Filter
+			wFinalResults = await FilterUNEQResultsREDIS( wFinalResults );
 
-			const wNewTracking = await RU.getFullSet( redis , R_NATURE_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wFinalResults = wFinalResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_NATURE_NEW_TRACKING );
+			// 3.) Tweet Uneq
 			await TweetResults( wFinalResults );
 			
 			console.log( "\nNature.com Scan Finished" );

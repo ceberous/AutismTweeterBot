@@ -1,12 +1,10 @@
-const request = require( "request" );
 const cheerio = require( "cheerio" );
 
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 const MPDI_BASE_URL = "http://www.mdpi.com";
 const DX_DOI_BASE_URL = "http://dx.doi.org";
@@ -68,9 +66,6 @@ function PARSE_RESULTS( wBody ) {
 
 const MDPI_SEARCH_URL = "http://www.mdpi.com/search?year_from=1996&year_to=2017&page_count=50&sort=pubdate&advanced=(%40(title)autism)%7C(%40(abstract)autism)&view=default";
 
-const R_MDPI_PLACEHOLDER = "SCANNERS.MDPI.PLACEHOLDER";
-const R_MPDI_NEW_TRACKING = "SCANNERS.MDPI.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
 function SEARCH( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -84,17 +79,7 @@ function SEARCH( wOptions ) {
 			var wResults = await PARSE_RESULTS( wBody );
 
 			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = wResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_MDPI_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_MPDI_NEW_TRACKING , R_MDPI_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_MDPI_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
-
-			const wNewTracking = await RU.getFullSet( redis , R_MPDI_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_MPDI_NEW_TRACKING );
+			wResults = await FilterUNEQResultsREDIS( wResults );
 
 			// 3.) Tweet Uneq Results
 			await TweetResults( wResults );

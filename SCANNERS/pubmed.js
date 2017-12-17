@@ -4,8 +4,8 @@ const { map } = require( "p-iteration" );
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
+
 
 const SCI_HUB_BASE_URL = "http://dx.doi.org.sci-hub.tw/";
 
@@ -146,9 +146,6 @@ function searchPubMedPreviousDay( wSearchTerms ) {
 
 }
 
-const R_PUBMED_PLACEHOLDER = "SCANNERS.PUBMED.PLACEHOLDER";
-const R_PUBMED_NEW_TRACKING = "SCANNERS.PUBMED.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
 function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -162,20 +159,9 @@ function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 			
 			// 2.) Gather "meta" data about each of them
 			var wPubMedResultsWithMetaData = await map( wPubMedRawResults , pubmedID => getPubMedIDInfo( pubmedID ) );
-			var b64_DOIS = wPubMedResultsWithMetaData.map( x => x[ "doiB64" ] );
+			wPubMedResultsWithMetaData = await FilterUNEQResultsREDIS( wPubMedResultsWithMetaData );
 
-			// 3. ) If There are "Un-Tracked" Results
-			await RU.setSetFromArray( redis , R_PUBMED_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_PUBMED_NEW_TRACKING , R_PUBMED_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_PUBMED_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
-
-			// 4. ) Tweet New Results
-			const wNewTracking = await RU.getFullSet( redis , R_PUBMED_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wPubMedResultsWithMetaData = wPubMedResultsWithMetaData.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_PUBMED_NEW_TRACKING );
+			// 3.) Tweet Results
 			await TweetResults( wPubMedResultsWithMetaData );
 
 			console.log( "\nPubMed Hourly Scan Finished" );

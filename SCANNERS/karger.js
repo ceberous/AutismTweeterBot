@@ -1,14 +1,12 @@
-const request = require( "request" );
-const FeedParser = require( "feedparser" );
 const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
 
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
+const FetchXMLFeed = require( "../UTILS/genericUtils.js" ).fetchXMLFeed;
 const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 const DX_DOI_BASE_URL = "http://dx.doi.org";
 const SCI_HUB_BASE_URL = DX_DOI_BASE_URL + ".sci-hub.tw/";
@@ -130,92 +128,28 @@ function scanText( wText ) {
 }
 
 function PARSE_XML_RESULTS( wResults ) {
-	return new Promise( function( resolve , reject ) {
-		try {
+	var finalResults = [];
+	for ( var i = 0; i < wResults.length; ++i ) {
 
-			var finalResults = [];
-			for ( var i = 0; i < wResults.length; ++i ) {
+		var wTitle = wResults[ i ][ "title" ];
+		if ( wTitle ) { wTitle = wTitle.trim(); }
+		var wFoundInTitle = scanText( wTitle );
+		var wDescription = wResults[ i ][ "rss:description" ][ "#" ];
+		if ( wDescription ) { wDescription = wDescription.trim(); }
+		var wFoundInDescription = scanText( wDescription );
 
-				var wTitle = wResults[ i ][ "title" ];
-				if ( wTitle ) { wTitle = wTitle.trim(); }
-				var wFoundInTitle = scanText( wTitle );
-				var wDescription = wResults[ i ][ "rss:description" ][ "#" ];
-				if ( wDescription ) { wDescription = wDescription.trim(); }
-				var wFoundInDescription = scanText( wDescription );
-
-				if ( wFoundInTitle || wFoundInDescription ) {
-					var wMainURL = wResults[ i ][ "link" ];
-					finalResults.push({
-						title: wTitle ,
-						mainURL: wMainURL ,
-					});
-				}
-
-			}
-
-			resolve( finalResults );
+		if ( wFoundInTitle || wFoundInDescription ) {
+			var wMainURL = wResults[ i ][ "link" ];
+			finalResults.push({
+				title: wTitle ,
+				mainURL: wMainURL ,
+			});
 		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
+
+	}
+	return finalResults;
 }
 
-function TRY_REQUEST( wURL ) {
-	return new Promise( function( resolve , reject ) {
-		try {
-
-			var wResults = [];
-			var feedparser = new FeedParser( [{ "normalize": true , "feedurl": wURL }] );
-			feedparser.on( "error" , function( error ) { console.log( error ); reject( error ); } );
-			feedparser.on( "readable" , function () {
-				var stream = this; 
-				var item;
-				while ( item = stream.read() ) { wResults.push( item ); }
-			});
-
-			feedparser.on( "end" , function() {
-				resolve( wResults );
-			});
-
-			var wReq = request( wURL );
-			wReq.on( "error" , function( error ) { console.log( error ); resolve( error ); });
-			wReq.on( "response" , function( res ){
-				var stream = this;
-				if ( res.statusCode !== 200) { console.log( "bad status code" ); resolve("null"); return; }
-				else { stream.pipe( feedparser ); }
-			});
-
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
-
-function fetchXML( wURL ) {
-	return new Promise( async function( resolve , reject ) {
-		try {
-			
-			console.log( "Searching --> " + wURL );
-			var wResults = [];
-
-			var RETRY_COUNT = 3;
-			var SUCCESS = false;
-
-			while ( !SUCCESS ) {
-				if ( RETRY_COUNT < 0 ) { SUCCESS = true; }
-				wResults = await TRY_REQUEST( wURL );
-				if ( wResults !== "null" ) { SUCCESS = true; }
-				else { 
-					console.log( "retrying again" );
-					RETRY_COUNT = RETRY_COUNT - 1;
-					await wSleep( 2000 );
-				}
-			}
-			wResults = await PARSE_XML_RESULTS( wResults );
-			resolve( wResults );
-
-		}
-		catch( error ) { console.log( error ); reject( error ); }
-	});
-}
 
 function SEARCH_SINGLE_KARGER_ARTICLE( wURL ) {
 	return new Promise( async function( resolve , reject ) {
@@ -236,9 +170,6 @@ function SEARCH_SINGLE_KARGER_ARTICLE( wURL ) {
 	});
 }
 
-const R_KARGER_PLACEHOLDER = "SCANNERS.KARGER.PLACEHOLDER";
-const R_KARGER_NEW_TRACKING = "SCANNERS.KARGER.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
 function SEARCH() {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -248,7 +179,8 @@ function SEARCH() {
 			PrintNowTime();			
 
 			// 1. ) Fetch Latest RSS-Results Matching "autism-keywords"
-			var wResults = await map( KARGER_RSS_URLS , wURL => fetchXML( wURL ) );
+			var wResults = await map( KARGER_RSS_URLS , wURL => FetchXMLFeed( wURL ) );
+			wResults = wResults.map( x => PARSE_XML_RESULTS( x ) );
 			wResults = [].concat.apply( [] , wResults );
 			//console.log( wResults );
 
@@ -261,20 +193,9 @@ function SEARCH() {
 				wResults[ i ][ "scihubURL" ] = SCI_HUB_BASE_URL + wMetaURLS[ i ];
 			}
 
-
 			// 3.) Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = wResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_KARGER_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_KARGER_NEW_TRACKING , R_KARGER_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_KARGER_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
+			wResults = await FilterUNEQResultsREDIS( wResults );
 
-			const wNewTracking = await RU.getFullSet( redis , R_KARGER_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_KARGER_NEW_TRACKING );
-			
 			// 4.) Tweet Results
 			await TweetResults( wResults );
 

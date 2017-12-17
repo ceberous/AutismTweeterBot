@@ -4,8 +4,8 @@ const puppeteer = require( "puppeteer" );
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
+
 
 const DX_DOI_BASE_URL = "http://dx.doi.org";
 const SCI_HUB_BASE_URL = DX_DOI_BASE_URL + ".sci-hub.tw/";
@@ -68,9 +68,7 @@ function PARSE_RESULT_PAGE( wBody ) {
 	});
 }
 
-const R_OUP_PLACEHOLDER = "SCANNERS.OUP.PLACEHOLDER";
-const R_OUP_NEW_TRACKING = "SCANNERS.OUP.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
+
 function SEARCH() {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -91,17 +89,7 @@ function SEARCH() {
 			console.log( finalResults );
 
 			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = finalResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_OUP_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_OUP_NEW_TRACKING , R_OUP_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_OUP_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
-
-			const wNewTracking = await RU.getFullSet( redis , R_OUP_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			finalResults = finalResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_OUP_NEW_TRACKING );
+			finalResults = await FilterUNEQResultsREDIS( finalResults );
 			
 			// 3.) Tweet Results
 			await TweetResults( finalResults );

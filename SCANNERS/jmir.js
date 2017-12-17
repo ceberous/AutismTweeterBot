@@ -4,8 +4,7 @@ const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 const MPDI_BASE_URL = "http://www.mdpi.com";
 const DX_DOI_BASE_URL = "http://dx.doi.org";
@@ -76,9 +75,7 @@ function PARSE_HTML_RESULTS( wBody ) {
 	});
 }
 
-const R_JMIR_PLACEHOLDER = "SCANNERS.JMIR.PLACEHOLDER";
-const R_JMIR_NEW_TRACKING = "SCANNERS.JMIR.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
+
 function SEARCH( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -98,17 +95,7 @@ function SEARCH( wOptions ) {
 			console.log( wResults );
 
 			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = wResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_JMIR_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_JMIR_NEW_TRACKING , R_JMIR_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_JMIR_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
-
-			const wNewTracking = await RU.getFullSet( redis , R_JMIR_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_JMIR_NEW_TRACKING );
+			wResults = await FilterUNEQResultsREDIS( wResults );
 
 			// 3.) Tweet Uneq Results
 			await TweetResults( wResults );

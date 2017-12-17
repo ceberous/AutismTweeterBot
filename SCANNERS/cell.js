@@ -5,8 +5,7 @@ const cheerio = require( "cheerio" );
 const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
-const redis = require( "../UTILS/redisManager.js" ).redis;
-const RU = require( "../UTILS/redisUtils.js" );
+const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
 
 const DX_DOI_BASE_URL = "http://dx.doi.org";
 const SCI_HUB_BASE_URL = DX_DOI_BASE_URL + ".sci-hub.tw/";
@@ -70,9 +69,7 @@ function FETCH_RESULTS( wURL ) {
 	});
 }
 
-const R_CELL_PLACEHOLDER = "SCANNERS.CELL.PLACEHOLDER";
-const R_CELL_NEW_TRACKING = "SCANNERS.CELL.NEW_TRACKING";
-const R_GLOBAL_ALREADY_TRACKED_DOIS = "SCANNERS.GLOBAL.ALREADY_TRACKED.DOIS";
+
 function SEARCH( wOptions ) {
 	return new Promise( async function( resolve , reject ) {
 		try {
@@ -92,18 +89,9 @@ function SEARCH( wOptions ) {
 			console.log( wResults );
 
 			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
-			var b64_DOIS = wResults.map( x => x[ "doiB64" ] );
-			await RU.setSetFromArray( redis , R_CELL_PLACEHOLDER , b64_DOIS );
-			await RU.setDifferenceStore( redis , R_CELL_NEW_TRACKING , R_CELL_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED_DOIS );
-			await RU.delKey( redis , R_CELL_PLACEHOLDER );
-			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED_DOIS , b64_DOIS );
+			wResults = await FilterUNEQResultsREDIS( wResults );
 
-			// 3.) Tweet Uneq Results
-			const wNewTracking = await RU.getFullSet( redis , R_CELL_NEW_TRACKING );
-			if ( !wNewTracking ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			if ( wNewTracking.length < 1 ) { console.log( "nothing new found" ); PrintNowTime(); resolve(); return; }
-			wResults = wResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
-			await RU.delKey( redis , R_CELL_NEW_TRACKING );
+			// 3.) Tweet Uneq
 			await TweetResults( wResults );
 
 			console.log( "" );
