@@ -1,7 +1,7 @@
 const request = require( "request" );
 const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
@@ -161,8 +161,8 @@ function SEARCH_PUBLISHED_TODAY_TITLE( wTerms ) {
 			var wPubMedResultsWithMetaData = await map( wPubMedRawResults , pubmedID => getPubMedIDInfo( pubmedID ) );
 			wPubMedResultsWithMetaData = await FilterUNEQResultsREDIS( wPubMedResultsWithMetaData );
 
-			// 3.) Tweet Results
-			await TweetResults( wPubMedResultsWithMetaData );
+			// 3.) Post Results
+			await PostResults( wPubMedResultsWithMetaData );
 
 			console.log( "\nPubMed Hourly Scan Finished" );
 			PrintNowTime();

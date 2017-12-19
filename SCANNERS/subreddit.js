@@ -1,6 +1,6 @@
 const FetchXMLFeed = require( "../UTILS/genericUtils.js" ).fetchXMLFeed;
 const { map } = require( "p-iteration" );
-const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const PostResults = require( "../UTILS/mastadonManager.js" ).emumerateStatusPosts;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const redis = require( "../UTILS/redisManager.js" ).redis;
 const RU = require( "../UTILS/redisUtils.js" );
@@ -8,7 +8,7 @@ const RU = require( "../UTILS/redisUtils.js" );
 function wSleep( ms ) { return new Promise( resolve => setTimeout( resolve , ms ) ); }
 
 var wSearchTerms = [];
-var wFinalTweets = [];
+var wFinalPosts = [];
 
 function scanText( wText ) {
 	
@@ -65,7 +65,7 @@ function SEARCH_SUBREDDIT( wOptions ) {
 			var wTopCommentTitles = wTopThreads.map( x => x["atom:title"]["#"].toLowerCase() );
 			wTopCommentTitles = wTopCommentTitles.filter( x => scanText( x ) === true );
 			wTopCommentTitles =  wTopCommentTitles.map( x => "#AutismComments " + x );
-			wFinalTweets = [].concat.apply( [] , wTopCommentTitles );
+			wFinalPosts = [].concat.apply( [] , wTopCommentTitles );
 
 			// 3.) Get 'Comment' Threads for each 'Top' Thread
 			var wTopCommentURLS = wTopThreads.map( x => x["link"] + ".rss" );
@@ -87,7 +87,7 @@ function SEARCH_SUBREDDIT( wOptions ) {
 			var wResults = await map( wSingleThreads , wThread => SEARCH_SINGLE_THREAD( wThread ) );
 			wResults = [].concat.apply( [] , wResults );
 
-			// 6.) Filter for 'Un-Tweeted' Results and Store 'Uneq' ones
+			// 6.) Filter for 'Un-Posted' Results and Store 'Uneq' ones
 			var wIDS = wResults.map( x => x["id"] );
 			await RU.setSetFromArray( redis , R_SUBREDDIT_PLACEHOLDER , wIDS );
 			await RU.setDifferenceStore( redis , R_PUBMED_NEW_TRACKING , R_SUBREDDIT_PLACEHOLDER , R_GLOBAL_ALREADY_TRACKED );
@@ -100,14 +100,14 @@ function SEARCH_SUBREDDIT( wOptions ) {
 			await RU.delKey( redis , R_PUBMED_NEW_TRACKING );
 			await RU.setSetFromArray( redis , R_GLOBAL_ALREADY_TRACKED , wIDS );
 
-			// 7.) Tweet Unique Results
+			// 7.) Post Unique Results
 			wResults =  wResults.map( x => "#AutismComments " + x["link"] );
-			wFinalTweets = [].concat.apply( [] , wResults );
-			console.log( wFinalTweets );
-			await TweetResults( wFinalTweets );
+			wFinalPosts = [].concat.apply( [] , wResults );
+			console.log( wFinalPosts );
+			await PostResults( wFinalPosts );
 
 			wSearchTerms = [];
-			wFinalTweets = [];
+			wFinalPosts = [];
 			console.log( "\nSubbreddit Scan Finished" );
 			console.log( "" );
 			PrintNowTime();			

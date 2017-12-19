@@ -3,7 +3,7 @@ const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
 const resolver = require("resolver");
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
@@ -156,7 +156,7 @@ function SEARCH_TODAY( wOptions ) {
 				else {
 					var wResults = await PARSE_MAIN_RESULTS( body );
 					wResults = await FilterUNEQResultsREDIS( wResults );
-					await TweetResults( wResults );
+					await PostResults( wResults );
 					resolve( wResults );
 				}
 			});

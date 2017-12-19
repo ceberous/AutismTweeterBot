@@ -1,7 +1,7 @@
 const cheerio = require( "cheerio" );
 const puppeteer = require( "puppeteer" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
@@ -91,8 +91,8 @@ function SEARCH() {
 			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
 			finalResults = await FilterUNEQResultsREDIS( finalResults );
 			
-			// 3.) Tweet Results
-			await TweetResults( finalResults );
+			// 3.) Post Results
+			await PostResults( finalResults );
 
 			console.log( "\nAcademic.OUP.com Scan Finished" );
 			console.log( "" );

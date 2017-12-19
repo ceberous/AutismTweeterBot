@@ -1,4 +1,4 @@
-const TweetResults = require( "../UTILS/tweetManager.js" ).enumerateTweets;
+const PostResults = require( "../UTILS/mastadonManager.js" ).emumerateStatusPosts;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const FetchXMLFeed = require( "../UTILS/genericUtils.js" ).fetchXMLFeed;
 const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
@@ -66,16 +66,16 @@ function SEARCH() {
 			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
 			wResults = FilterUNEQResultsREDIS( wResults );
 
-			// 3.) Tweet Results
+			// 3.) Post Results
 			var wFormattedTweets = [];
 			for ( var i = 0; i < wResults.length; ++i ) {
 				var wMessage = "#AutismResearch ";
-				if ( wResults[i].title.length > 100 ) {
-					wMessage = wMessage + wResults[i].title.substring( 0 , 97 );
+				if ( wResults[i].title.length > 460 ) {
+					wMessage = wMessage + wResults[i].title.substring( 0 , 457 );
 					wMessage = wMessage + "...";
 				}
 				else {
-					wMessage = wMessage + wResults[i].title.substring( 0 , 100 );
+					wMessage = wMessage + wResults[i].title.substring( 0 , 460 );
 				}
 				if ( wResults[i].mainURL ) {
 					wMessage = wMessage + " " + wResults[i].mainURL;
@@ -83,7 +83,7 @@ function SEARCH() {
 				wFormattedTweets.push( wMessage );
 			}
 			console.log( wFormattedTweets );
-			await TweetResults( wFormattedTweets );
+			await PostResults( wFormattedTweets );
 
 			console.log( "\nSpectrumNews.org Scan Finished" );
 			console.log( "" );

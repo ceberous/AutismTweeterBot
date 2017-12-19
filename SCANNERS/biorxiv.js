@@ -1,6 +1,6 @@
 const { map } = require( "p-iteration" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const FetchXMLFeed = require( "../UTILS/genericUtils.js" ).fetchXMLFeed;
@@ -73,8 +73,8 @@ function SEARCH() {
 			// 2.) Filter Uneq
 			wResults = await FilterUNEQResultsREDIS( wResults );
 
-			// 3.) Tweet Uneq
-			await TweetResults( wResults );
+			// 3.) Post Uneq
+			await PostResults( wResults );
 
 			console.log( "\nBiorxiv.org Scan Finished" );
 			PrintNowTime();

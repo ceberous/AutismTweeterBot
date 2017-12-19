@@ -1,6 +1,6 @@
 const cheerio = require( "cheerio" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
@@ -39,8 +39,8 @@ function SEARCH() {
 			// finalResults = finalResults.filter( x => wNewTracking.indexOf( x[ "doiB64" ] ) !== -1 );
 			// await RU.delKey( redis , R_UNMC_NEW_TRACKING );
 			
-			// // 3.) Tweet Results
-			// await TweetResults( finalResults );
+			// // 3.) Post Results
+			// await PostResults( finalResults );
 
 			console.log( "\nunmc.edu Scan Finished" );
 			console.log( "" );

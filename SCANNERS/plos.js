@@ -2,7 +2,7 @@ const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
 const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
@@ -138,8 +138,8 @@ function SEARCH( wJournals ) {
 			// 3.) Compare to Already 'Tracked' DOIs and Store Uneq
 			wFinal_Found_Results = await FilterUNEQResultsREDIS( wFinal_Found_Results );
 
-			// 4.) Tweet Results
-			await TweetResults( wFinal_Found_Results );
+			// 4.) Post Results
+			await PostResults( wFinal_Found_Results );
 
 			console.log( "" );
 			console.log( "PLOS.org Scan Finished" );

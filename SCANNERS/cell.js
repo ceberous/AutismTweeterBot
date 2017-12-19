@@ -2,7 +2,7 @@
 const puppeteer = require( "puppeteer" );
 const cheerio = require( "cheerio" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
@@ -91,8 +91,8 @@ function SEARCH( wOptions ) {
 			// 2.) Compare to Already 'Tracked' DOIs and Store Uneq
 			wResults = await FilterUNEQResultsREDIS( wResults );
 
-			// 3.) Tweet Uneq
-			await TweetResults( wResults );
+			// 3.) Post Uneq
+			await PostResults( wResults );
 
 			console.log( "" );
 			console.log( "Cell.com Scan Finished" );

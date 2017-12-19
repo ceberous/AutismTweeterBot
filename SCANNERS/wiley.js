@@ -1,7 +1,7 @@
 const cheerio = require( "cheerio" );
 const { map } = require( "p-iteration" );
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const MakeRequest = require( "../UTILS/genericUtils.js" ).makeRequest;
@@ -106,8 +106,8 @@ function SEARCH( wOptions ) {
 			// 2.) Compare and Store 'Uneq' Results
 			finalResults = await FilterUNEQResultsREDIS( finalResults );
 
-			// 3.) Tweet Uneq Results
-			await TweetResults( finalResults );
+			// 3.) Post Uneq Results
+			await PostResults( finalResults );
 			
 			console.log( "" );
 			console.log( "\nWiley.com Scan Finished" );

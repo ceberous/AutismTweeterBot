@@ -12,7 +12,7 @@ const cheerio = require( "cheerio" );
 const puppeteer = require( "puppeteer" );
 
 
-const TweetResults = require( "../UTILS/tweetManager.js" ).formatPapersAndTweet;
+const PostResults = require( "../UTILS/mastadonManager.js" ).formatPapersAndPost;
 const PrintNowTime = require( "../UTILS/genericUtils.js" ).printNowTime;
 const EncodeB64 = require( "../UTILS/genericUtils.js" ).encodeBase64;
 const FilterUNEQResultsREDIS = require( "../UTILS/genericUtils.js" ).filterUneqResultsCOMMON;
@@ -135,8 +135,8 @@ function SEARCH_TODAY( wOptions ) {
 			// 2.) Filter
 			wFinalResults = await FilterUNEQResultsREDIS( wFinalResults );
 
-			// 3.) Tweet Uneq
-			await TweetResults( wFinalResults );
+			// 3.) Post Uneq
+			await PostResults( wFinalResults );
 			
 			console.log( "\nNature.com Scan Finished" );
 			console.log( "" );
