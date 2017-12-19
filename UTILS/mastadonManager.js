@@ -11,7 +11,7 @@ var wMastadonClient = null;
 // }
 
 function POST_STATUS( wStatus ) {
-	return new Promise( function( resolve , reject ) {
+	return new Promise( async function( resolve , reject ) {
 		try {
 			await M.post( "statuses" , { status: wStatus });
 			setTimeout( function() {	
@@ -54,7 +54,7 @@ function FORMAT_PAPERS_AND_POST( wResults ) {
 				if ( wResults[i].scihubURL ) { wAvailable = ( wAvailable - ( 23 + 8 ) ); }
 				
 				if ( wResults[i].title.length > wAvailable ) {
-					wMessage = wMessage + wResults[i].title.substring( 0 , ( wAvailable - 3 );
+					wMessage = wMessage + wResults[i].title.substring( 0 , ( wAvailable - 3 ) );
 					wMessage = wMessage + "...";
 				}
 				else {
